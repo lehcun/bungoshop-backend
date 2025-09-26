@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Header,
 } from '@nestjs/common';
 import { UserService } from './users.service';
 
@@ -14,6 +15,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
+  @Header('Cache-Control', 'no-store')
   findAll() {
     return this.userService.findAll();
   }
