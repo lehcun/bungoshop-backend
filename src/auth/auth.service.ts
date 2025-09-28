@@ -9,9 +9,9 @@ export class AuthService {
     private usersService: UserService,
   ) {}
 
-  async signIn(id: number, email: string, password: string): Promise<any> {
-    const user = await this.usersService.findOne(id);
-    if (user?.password !== password || user?.email != email) {
+  async signIn(email: string, password: string): Promise<any> {
+    const user = await this.usersService.findOneByEmail(email);
+    if (user?.password !== password) {
       throw new UnauthorizedException('Sai tài khoản hoặc mật khẩu');
     }
     const payload = { username: user.name, sub: user.id };

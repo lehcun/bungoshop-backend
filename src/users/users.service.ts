@@ -6,6 +6,12 @@ import { User } from 'generated/prisma';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
+  async findOneByEmail(email: string) {
+    return this.prisma.user.findUnique({
+      where: { email }, // 👈 email phải là @unique trong Prisma schema
+    });
+  }
+
   findAll(): Promise<User[]> {
     return this.prisma.user.findMany();
   }
