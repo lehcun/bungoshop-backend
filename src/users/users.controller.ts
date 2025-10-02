@@ -6,23 +6,36 @@ import {
   Delete,
   Body,
   Param,
-  Header,
+  UseGuards,
+  Request,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { UserService } from './users.service';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
-  @Header('Cache-Control', 'no-store')
   findAll() {
     return this.userService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: number) {
-    return this.userService.findOne(id);
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.userService.findOne(id);
+  // }
+
+  @Get('me')
+  @UseGuards(AuthGuard('jwt'))
+  login(@Request() req) {
+    if (!req.user) {
+      throw new UnauthorizedException('Không tìm thấy thông tin người dùng');
+    }
+    return {
+      user: req.user, // bắt buộc trả JSON có key rõ ràng
+    };
   }
 
   @Post()
@@ -35,11 +48,11 @@ export class UserController {
     @Param('id') id: string,
     @Body() body: { name?: string; email?: string },
   ) {
-    return this.userService.update(Number(id), body);
+    return this.userService.update(id, body);
   }
 
   @Delete(':id')
   delete(@Param('id') id: string) {
-    return this.userService.delete(Number(id));
+    return this.userService.delete(id);
   }
 }

@@ -11,18 +11,15 @@ export class AuthService {
 
   async signIn(email: string, password: string): Promise<any> {
     const user = await this.usersService.findOneByEmail(email);
-    if (user?.password !== password) {
+    if (!user || user?.password !== password) {
       throw new UnauthorizedException('Sai tài khoản hoặc mật khẩu');
     }
-    const payload = { username: user.name, sub: user.id };
-    return {
-      access_token: this.jwtService.sign(payload),
+    const payload = {
+      username: user.name,
+      sdt: user.sdt,
+      email: user.email,
+      sub: user.id,
     };
-  }
-
-  async login(user: any) {
-    const payload = { username: user.username, sub: user.id };
-
     return {
       access_token: this.jwtService.sign(payload),
     };

@@ -7,7 +7,6 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() body: { email: string; password: string }) {
-    console.log(body);
     return this.authService.signIn(body.email, body.password);
   }
 }
