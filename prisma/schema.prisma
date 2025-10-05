@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -8,120 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String     @id @default(cuid())
-  name      String
-  email     String     @unique
-  sdt       String?     @unique
-  password  String
-  role      Role       @default(CUSTOMER)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  cart      CartItem[]
-  orders    Order[]
-  reviews  Review[]
-  favorite Favorite[]
-}
-
-model Category {
-  id       Int       @id @default(autoincrement())
-  name     String    @unique
-  products Product[]
-}
-
-model Product {
-  id          String           @id @default(cuid())
-  name        String
-  description String?
-  price       Float
-  discount    Float? // % giảm giá
-  status      ProductStatus? // NEW, HOT, BEST
-  category    Category         @relation(fields: [categoryId], references: [id])
-  brand       Brand?           @relation(fields: [brandId], references: [id]) // thay doi
-  brandId     Int?
-  categoryId  Int
-  images      ProductImage[]
-  variants    ProductVariant[]
-  reviews     Review[]
-  createdAt   DateTime         @default(now())
-  CartItem    CartItem[]
-  OrderItem   OrderItem[]
-  Favorite    Favorite[]
-}
-
-model ProductImage {
-  id        Int     @id @default(autoincrement())
-  url       String
-  product   Product @relation(fields: [productId], references: [id])
-  productId String
-}
-
-model ProductVariant {
-  id        Int     @id @default(autoincrement())
-  product   Product @relation(fields: [productId], references: [id])
-  productId String
-  size      String?
-  color     String?
-  stock     Int     @default(0)
-}
-
-model Review {
-  id        Int     @id @default(autoincrement())
-  rating    Int // số sao
-  comment   String?
-  product   Product @relation(fields: [productId], references: [id])
-  productId String
-  user      User    @relation(fields: [userId], references: [id])
-  userId    String
-}
-
-model Favorite {
-  id        Int      @id @default(autoincrement())
-  userId    String
-  productId String
-  createdAt DateTime @default(now())
-
-  user    User    @relation(fields: [userId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
-}
-
-model CartItem {
-  id        String    @id @default(cuid())
-  user      User      @relation(fields: [userId], references: [id])
-  userId    String
-  product   Product   @relation(fields: [productId], references: [id])
-  productId String
-  quantity  Int       @default(1)
-}
-
-model Order {
-  id       String     @id @default(cuid())
-  user      User        @relation(fields: [userId], references: [id])
-  userId    String
-  status    OrderStatus @default(PENDING)
-  total     Float
-  items     OrderItem[]
-  createdAt DateTime    @default(now())
-}
-
-model OrderItem {
-  id        Int     @id @default(autoincrement())
-  order     Order   @relation(fields: [orderId], references: [id])
-  orderId   String
-  product   Product @relation(fields: [productId], references: [id])
-  productId String
-  quantity  Int
-  price     Float // giá tại thời điểm mua
-}
-
-model Brand {
-  id       Int       @id @default(autoincrement())
-  name     String
-  logoUrl  String?
-  products Product[]
-}
-
+/// ---------- Enums ----------
 enum ProductStatus {
   NEW
   HOT
@@ -139,4 +25,297 @@ enum OrderStatus {
   SHIPPED
   COMPLETED
   CANCELED
+  REFUNDED
 }
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CARD
+  WALLET
+  COD
+  TRANSFER
+}
+
+/// ---------- Models ----------
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  phone        String?    @unique
+  password     String     // <-- Hash ở application layer (bcrypt/argon2)
+  role         Role       @default(CUSTOMER)
+  avatarUrl    String?
+  bio          String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @default(now()) @updatedAt
+  deletedAt    DateTime?
+
+  // relations
+  cart         CartItem[]
+  orders       Order[]
+  reviews      Review[]
+  favorites    Favorite[]
+  addresses    Address[]
+  payments     Payment[]
+}
+
+model Category {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique
+  description String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  deletedAt  DateTime?
+
+  products   Product[]
+
+  @@index([name])
+}
+
+model Brand {
+  id         Int       @id @default(autoincrement())
+  name       String
+  slug       String?   @unique
+  description String?
+  website    String?
+  logoUrl    String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  deletedAt  DateTime?
+
+  products   Product[]
+  @@index([name])
+}
+
+model Product {
+  id          String           @id @default(cuid())
+  name        String
+  slug        String?          @unique
+  description String?
+  price       Decimal          @db.Decimal(10,2)
+  discount    Decimal?         @db.Decimal(10,2) // percentage or amount depending on business logic
+  discountAmount Decimal?      @db.Decimal(10,2) // explicit discount amount (optional)
+  status      ProductStatus?
+  category    Category         @relation(fields: [categoryId], references: [id])
+  categoryId  Int
+  brand       Brand?           @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  brandId     Int?
+  images      ProductImage[]
+  variants    ProductVariant[]
+  reviews     Review[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @default(now()) @updatedAt
+  deletedAt   DateTime?
+
+  CartItem    CartItem[]
+  OrderItem   OrderItem[]
+  Favorite    Favorite[]
+
+  @@index([name])
+  @@index([categoryId])
+  @@index([brandId])
+}
+
+model ProductImage {
+  id         Int      @id @default(autoincrement())
+  url        String
+  altText    String?
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  deletedAt  DateTime?
+}
+
+model ProductVariant {
+  id         Int      @id @default(autoincrement())
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+  sku        String?  @unique
+  size       String?
+  color      String?
+  metadata   Json?    // extensible (e.g., weight, dimensions)
+  stock      Int      @default(0)
+  priceDelta Decimal? @db.Decimal(10,2) // optional price difference vs base product
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  deletedAt  DateTime?
+
+  OrderItem  OrderItem[]
+  CartItem   CartItem[]
+  Favorite   Favorite[]
+
+  @@index([productId])
+  @@index([sku])
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  rating     Int      @default(0) // validate 1..5 in app layer
+  comment    String?
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  deletedAt  DateTime?
+
+  @@index([productId])
+  @@index([userId])
+}
+
+model Favorite {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+  variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  variantId  Int?
+  createdAt  DateTime @default(now())
+  deletedAt  DateTime?
+
+  @@unique([userId, productId, variantId]) // avoid duplicates (variant-specific)
+  @@index([userId])
+  @@index([productId])
+}
+
+model CartItem {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+  variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  variantId  Int?
+  quantity   Int       @default(1)
+  unitPrice  Decimal   @db.Decimal(10,2) // snapshot price when added
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
+  deletedAt  DateTime?
+
+  @@unique([userId, productId, variantId]) // one cart line per variant
+  @@index([userId])
+}
+
+model Order {
+  id             String       @id @default(cuid())
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId         String?
+  status         OrderStatus  @default(PENDING)
+  subtotal       Decimal      @db.Decimal(10,2)
+  shippingFee    Decimal      @db.Decimal(10,2) @default("0.00")
+  discountAmount Decimal?     @db.Decimal(10,2)
+  total          Decimal      @db.Decimal(10,2)
+  promotionCode  String?
+  shippingAddressId Int?      // optional relation to Address
+  shippingAddress Address?    @relation(fields: [shippingAddressId], references: [id], onDelete: SetNull)
+  paymentMethod  PaymentMethod?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  deletedAt      DateTime?
+
+  items          OrderItem[]
+  payments       Payment[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id          Int      @id @default(autoincrement())
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId     String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId   String
+  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  variantId   Int?
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(10,2) // price at purchase
+  totalPrice  Decimal  @db.Decimal(10,2)
+  createdAt   DateTime @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
+  deletedAt   DateTime?
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Address {
+  id          Int      @id @default(autoincrement())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  label       String?  // e.g., "Home", "Office"
+  recipient   String
+  phone       String
+  line1       String
+  line2       String?
+  city        String
+  state       String?
+  postalCode  String?
+  country     String
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
+  deletedAt   DateTime?
+
+  order Order[]
+
+  @@index([userId])
+  @@index([isDefault])
+}
+
+model Promotion {
+  id            Int      @id @default(autoincrement())
+  code          String   @unique
+  description   String?
+  discountPercent Decimal? @db.Decimal(5,2)
+  discountAmount  Decimal? @db.Decimal(10,2)
+  active        Boolean  @default(true)
+  startsAt      DateTime?
+  expiresAt     DateTime?
+  maxUses       Int?
+  usedCount     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+
+  @@index([code])
+  @@index([active])
+}
+
+model Payment {
+  id             String         @id @default(cuid())
+  order          Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  orderId        String?
+  user           User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId         String?
+  provider       String         // e.g., stripe, paypal
+  method         PaymentMethod
+  status         PaymentStatus  @default(PENDING)
+  amount         Decimal        @db.Decimal(10,2)
+  currency       String         @default("USD")
+  transactionId  String?        @unique
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+  updatedAt       DateTime      @default(now()) @updatedAt
+
+}
+
+/// ---------- Indexes / Notes ----------
+/*
+ - Use Decimal @db.Decimal(precision, scale) for monetary fields to avoid float rounding.
+ - All models have createdAt/updatedAt; many have deletedAt for soft-delete.
+ - Added indexes on commonly queried fields (name, categoryId, brandId, userId, status).
+ - Favorites/CartItem use composite unique keys to prevent duplicates per variant.
+ - ProductVariant has sku & stock; application layer should enforce stock checks per variant.
+ - Password still String: ensure hashing in application code before saving.
+ - Consider adding DB-level constraints or triggers externally if needed.
+*/
