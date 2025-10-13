@@ -587,47 +587,53 @@ async function main() {
   console.log('👤 Bắt đầu tạo user mẫu...');
 
   // Xoá dữ liệu user cũ để tránh lỗi unique
-  await prisma.user.deleteMany();
+  // await prisma.user.deleteMany();
 
-  await prisma.user.createMany({
-    data: [
-      {
-        name: 'Bu Nguyễn',
-        email: 'bu@example.com',
-        phone: '0901111222',
-        password: '123456', // ⚠️ nhớ mã hoá ở app thực tế (bcrypt)
-        role: 'CUSTOMER',
-        avatarUrl:
-          'https://res.cloudinary.com/dbvlsf9bi/image/upload/v1759736844/BuAnCuopChibi_kpa9lb.png',
-        bio: 'Khách hàng thân thiết của shop.',
-      },
-      {
-        name: 'Mai Hương',
-        email: 'huong@example.com',
-        phone: '0903333444',
-        password: '123456',
-        role: 'CUSTOMER',
-        avatarUrl:
-          'https://res.cloudinary.com/dbvlsf9bi/image/upload/v1759736844/BuAnCuopChibi_kpa9lb.png',
-        bio: 'Thích sưu tập thời trang nữ và giày sneaker.',
-      },
-      {
-        name: 'Khôi Lê',
-        email: 'khoi@example.com',
-        phone: '0905555666',
-        password: '123456',
-        role: 'CUSTOMER',
-        avatarUrl:
-          'https://res.cloudinary.com/dbvlsf9bi/image/upload/v1759736844/BuAnCuopChibi_kpa9lb.png',
-        bio: 'Đam mê thể thao và thời trang nam tính.',
-      },
-    ],
-  });
+  // await prisma.user.createMany({
+  //   data: [
+  //     {
+  //       name: 'Bu Nguyễn',
+  //       email: 'bu@example.com',
+  //       phone: '0901111222',
+  //       password: '123456', // ⚠️ nhớ mã hoá ở app thực tế (bcrypt)
+  //       role: 'CUSTOMER',
+  //       avatarUrl:
+  //         'https://res.cloudinary.com/dbvlsf9bi/image/upload/v1759736844/BuAnCuopChibi_kpa9lb.png',
+  //       bio: 'Khách hàng thân thiết của shop.',
+  //     },
+  //     {
+  //       name: 'Mai Hương',
+  //       email: 'huong@example.com',
+  //       phone: '0903333444',
+  //       password: '123456',
+  //       role: 'CUSTOMER',
+  //       avatarUrl:
+  //         'https://res.cloudinary.com/dbvlsf9bi/image/upload/v1759736844/BuAnCuopChibi_kpa9lb.png',
+  //       bio: 'Thích sưu tập thời trang nữ và giày sneaker.',
+  //     },
+  //     {
+  //       name: 'Khôi Lê',
+  //       email: 'khoi@example.com',
+  //       phone: '0905555666',
+  //       password: '123456',
+  //       role: 'CUSTOMER',
+  //       avatarUrl:
+  //         'https://res.cloudinary.com/dbvlsf9bi/image/upload/v1759736844/BuAnCuopChibi_kpa9lb.png',
+  //       bio: 'Đam mê thể thao và thời trang nam tính.',
+  //     },
+  //   ],
+  // });
 
-  console.log('⭐ Bắt đầu tạo review tự sinh...');
+  // console.log('⭐ Bắt đầu tạo review tự sinh...');
 
   const users = await prisma.user.findMany();
-  const products = await prisma.product.findMany();
+  const products = await prisma.product.findMany({
+    include: { variants: true },
+  });
+
+  const orderItems = await prisma.orderItem.findMany({
+    include: { order: true },
+  });
 
   if (users.length === 0 || products.length === 0) {
     console.log('⚠️ Không có user hoặc product để seed review');
@@ -658,11 +664,34 @@ async function main() {
         const randomUser = users[getRandom(0, users.length - 1)];
         const randomComment = comments[getRandom(0, comments.length - 1)];
 
+        const purchasedVariant = orderItems.find(
+          (item) =>
+            item.order?.userId === randomUser.id &&
+            item.productId === product.id &&
+            item.variantId !== null,
+        );
+
+        let variantId: number;
+
+        if (purchasedVariant) {
+          // user đã mua variant này
+          variantId = purchasedVariant.variantId;
+        } else if (product.variants.length > 0) {
+          // nếu user chưa mua, chọn variant ngẫu nhiên
+          const randomVariant =
+            product.variants[getRandom(0, product.variants.length - 1)];
+          variantId = randomVariant.id;
+        } else {
+          // nếu product chưa có variant (hiếm)
+          continue;
+        }
+
         reviewsData.push({
           rating: getRandom(4, 5),
           comment: randomComment,
           productId: product.id,
           userId: randomUser.id,
+          variantId,
           createdAt: new Date(
             Date.now() - getRandom(1, 90) * 24 * 60 * 60 * 1000,
           ),
@@ -670,9 +699,14 @@ async function main() {
       }
     }
 
-    await prisma.review.createMany({ data: reviewsData });
-
-    console.log(`✅ Đã tạo ${reviewsData.length} review tự sinh thành công!`);
+    if (reviewsData.length > 0) {
+      await prisma.review.createMany({ data: reviewsData });
+      console.log(
+        `✅ Đã tạo ${reviewsData.length} review tự sinh (có variantId)`,
+      );
+    } else {
+      console.log('⚠️ Không có dữ liệu review để tạo');
+    }
   }
 }
 

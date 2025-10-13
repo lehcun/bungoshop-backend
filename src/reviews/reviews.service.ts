@@ -4,11 +4,12 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class ReviewsService {
   constructor(private prisma: PrismaService) {}
-  async findAll() {
+  async findAll(productId: string) {
     return this.prisma.review.findMany({
+      where: { productId },
       include: {
         user: true,
-        product: true,
+        variant: true,
       },
     });
   }
@@ -18,7 +19,6 @@ export class ReviewsService {
       where: { id },
       include: {
         user: true,
-        product: true,
       },
     });
   }

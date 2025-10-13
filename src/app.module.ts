@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { ProductsModule } from './products/products.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ReviewsModule } from './reviews/reviews.module';
     AuthModule,
     ProductsModule,
     ReviewsModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

@@ -69,7 +69,7 @@ model Category {
   id         Int       @id @default(autoincrement())
   name       String    @unique
   description String?
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime  @default(now()) 
   updatedAt  DateTime @default(now()) @updatedAt
   deletedAt  DateTime?
 
@@ -150,6 +150,7 @@ model ProductVariant {
   OrderItem  OrderItem[]
   CartItem   CartItem[]
   Favorite   Favorite[]
+  Review     Review[]
 
   @@index([productId])
   @@index([sku])
@@ -163,6 +164,8 @@ model Review {
   productId  String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String
+  variantId  Int
+  variant    ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
   deletedAt  DateTime?
