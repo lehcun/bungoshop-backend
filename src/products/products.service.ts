@@ -11,31 +11,33 @@ export class ProductsService {
     priceRange?: string;
     sort?: string;
   }) {
-    let orderBy: any = { createdAt: 'desc' }; // Default newest
+    let where: any = {};
+    if (filters.categories && filters.categories.length > 0) {
+      where = {
+        category: {
+          name: { in: filters.categories },
+        },
+      };
+    }
+
+    let orderBy: any = {};
     switch (filters.sort) {
-      case 'price_asc':
+      case 'priceAsc':
         orderBy = { price: 'asc' };
         break;
-      case 'price_desc':
+      case 'priceDesc':
         orderBy = { price: 'desc' };
         break;
-      case 'date_oldest':
+      case 'newest':
         orderBy = { createdAt: 'asc' };
         break;
-      case 'date_newest':
+      case 'oldest':
         orderBy = { createdAt: 'desc' };
         break;
     }
 
-    console.log('📦 Filters:', filters);
-    console.log('📑 Sort by:', orderBy);
-
     return this.prisma.product.findMany({
-      where: {
-        category: {
-          name: { in: filters.categories },
-        },
-      },
+      where,
       orderBy,
       include: {
         category: true,

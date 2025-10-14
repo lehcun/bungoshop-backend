@@ -18,7 +18,7 @@ export class ProductsController {
         : category.split(',')
       : [];
 
-    return this.productsService.findFilter({ categories, priceRange });
+    return this.productsService.findFilter({ categories, priceRange, sort });
   }
 
   @Get('/all')
