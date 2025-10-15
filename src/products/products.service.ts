@@ -49,6 +49,22 @@ export class ProductsService {
     });
   }
 
+  async findHot(count: number) {
+    return this.prisma.product.findMany({
+      where: {
+        status: 'HOT',
+      },
+      take: count,
+      include: {
+        category: true,
+        brand: true,
+        images: true,
+        variants: true,
+        reviews: true,
+      },
+    });
+  }
+
   // Lấy toàn bộ sản phẩm
   async findAll() {
     return this.prisma.product.findMany({

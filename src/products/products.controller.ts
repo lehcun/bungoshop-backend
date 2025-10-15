@@ -21,6 +21,11 @@ export class ProductsController {
     return this.productsService.findFilter({ categories, priceRange, sort });
   }
 
+  @Get('/display/:id')
+  async getHot(@Param('id') count: string) {
+    return this.productsService.findHot(Number(count));
+  }
+
   @Get('/all')
   async getAll() {
     return this.productsService.findAll();

@@ -13,7 +13,11 @@ export class UserService {
   }
 
   findAll(): Promise<User[]> {
-    return this.prisma.user.findMany();
+    return this.prisma.user.findMany({
+      include: {
+        cart: true,
+      },
+    });
   }
 
   findOne(id: string): Promise<User | null> {
