@@ -8,15 +8,20 @@ export class ProductsService {
   // Lấy toàn bộ sản phẩm theo filter
   async findFilter(filters: {
     categories?: string[];
+    brands?: string[];
     priceRange?: string;
     sort?: string;
   }) {
     let where: any = {};
     if (filters.categories && filters.categories.length > 0) {
-      where = {
-        category: {
-          name: { in: filters.categories },
-        },
+      where.category = {
+        name: { in: filters.categories },
+      };
+    }
+
+    if (filters.brands && filters.brands.length > 0) {
+      where.brand = {
+        name: { in: filters.brands },
       };
     }
 

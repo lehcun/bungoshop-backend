@@ -34,7 +34,7 @@ export class UserController {
       throw new UnauthorizedException('Không tìm thấy thông tin người dùng');
     }
     return {
-      user: req.user, // bắt buộc trả JSON có key rõ ràng
+      user: req.user, // Đã có include đầy đủ từ JwtStrategy
     };
   }
 

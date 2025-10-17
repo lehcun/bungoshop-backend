@@ -21,7 +21,10 @@ export class UserService {
   }
 
   findOne(id: string): Promise<User | null> {
-    return this.prisma.user.findUnique({ where: { id } });
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: { cart: true, favorites: true },
+    });
   }
 
   create(data: {

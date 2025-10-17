@@ -8,6 +8,7 @@ export class ProductsController {
   @Get()
   async findAll(
     @Query('categories') category?: string | string[],
+    @Query('brands') brand?: string | string[],
     @Query('priceRange') priceRange?: string,
     @Query('sort') sort?: string,
   ) {
@@ -18,7 +19,19 @@ export class ProductsController {
         : category.split(',')
       : [];
 
-    return this.productsService.findFilter({ categories, priceRange, sort });
+    // ⚙️ Chuyển brand thành mảng luôn
+    const brands = brand
+      ? Array.isArray(brand)
+        ? brand
+        : brand.split(',')
+      : [];
+
+    return this.productsService.findFilter({
+      categories,
+      brands,
+      priceRange,
+      sort,
+    });
   }
 
   @Get('/display/:id')
