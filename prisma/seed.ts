@@ -876,6 +876,7 @@ async function main() {
       id: `promo${i + 1}`,
       code,
       description: `Khuyến mãi ${isPercentDiscount ? 'giảm giá' : 'tặng tiền'} ngẫu nhiên`,
+      discountType: `${isPercentDiscount ? 'PERCENT' : 'AMOUNT'}`,
       active: getRandom(0, 1) === 1, // Ngẫu nhiên active hoặc không
       startsAt: new Date(Date.now() - getRandom(1, 90) * 24 * 60 * 60 * 1000), // 1-90 ngày trước
       expiresAt: new Date(Date.now() + getRandom(1, 120) * 24 * 60 * 60 * 1000), // 1-120 ngày tới

@@ -5,6 +5,57 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
+  // ===== Utility function =====
+  private applyPromotion(product: any) {
+    console.log('product.PromotionOnProduct: ', product.PromotionOnProduct);
+    const validPromos =
+      product.PromotionOnProduct?.filter(
+        (p: any) =>
+          p.promotion &&
+          p.promotion.active &&
+          new Date(p.promotion.startsAt) <= new Date() &&
+          new Date(p.promotion.expiresAt) >= new Date(),
+      ) || [];
+
+    if (validPromos.length === 0) {
+      return { ...product, salePrice: product.price, discountPercent: 0 };
+    }
+
+    let bestPromo = null;
+    let bestSalePrice = product.price;
+    let bestDiscountPercent = 0;
+
+    for (const p of validPromos) {
+      const promo = p.promotion;
+      let salePrice = product.price;
+      let discountPercent = 0;
+
+      if (promo.discountType === 'PERCENT') {
+        discountPercent = promo.discountPercent ?? 0;
+        salePrice = Math.round(product.price * (1 - discountPercent));
+      } else if (promo.discountType === 'AMOUNT') {
+        salePrice = Math.max(salePrice, product.price - promo.discountAmount);
+        discountPercent = Math.round(
+          (promo.discountAmount / product.price) * 100,
+        );
+      }
+      console.log('discountPercent: ', discountPercent);
+      // Nếu giảm nhiều hơn thì chọn cái này
+      if (salePrice < bestSalePrice) {
+        bestSalePrice = salePrice;
+        bestPromo = promo;
+        bestDiscountPercent = discountPercent;
+      }
+    }
+
+    return {
+      ...product,
+      salePrice: bestSalePrice,
+      discountPercent: bestDiscountPercent,
+      promotion: bestPromo,
+    };
+  }
+
   // Lấy toàn bộ sản phẩm theo filter
   async findFilter(filters: {
     categories?: string[];
@@ -41,7 +92,7 @@ export class ProductsService {
         break;
     }
 
-    return this.prisma.product.findMany({
+    const products = this.prisma.product.findMany({
       where,
       orderBy,
       include: {
@@ -50,12 +101,18 @@ export class ProductsService {
         images: true,
         variants: true,
         reviews: true,
+        PromotionOnProduct: {
+          include: {
+            promotion: true,
+          },
+        },
       },
     });
+    return (await products).map((p) => this.applyPromotion(p));
   }
 
   async findHot(count: number) {
-    return this.prisma.product.findMany({
+    const products = this.prisma.product.findMany({
       where: {
         status: 'HOT',
       },
@@ -66,26 +123,38 @@ export class ProductsService {
         images: true,
         variants: true,
         reviews: true,
+        PromotionOnProduct: {
+          include: {
+            promotion: true,
+          },
+        },
       },
     });
+    return (await products).map((p) => this.applyPromotion(p));
   }
 
   // Lấy toàn bộ sản phẩm
   async findAll() {
-    return this.prisma.product.findMany({
+    const products = this.prisma.product.findMany({
       include: {
         category: true,
         brand: true,
         images: true,
         variants: true,
         reviews: true,
+        PromotionOnProduct: {
+          include: {
+            promotion: true,
+          },
+        },
       },
     });
+    return (await products).map((p) => this.applyPromotion(p));
   }
 
   // Lấy chi tiết 1 sản phẩm
   async findOne(id: string) {
-    return this.prisma.product.findUnique({
+    const product = this.prisma.product.findUnique({
       where: { id },
       include: {
         category: true,
@@ -95,7 +164,7 @@ export class ProductsService {
         reviews: true,
       },
     });
+    if (!product) return null;
+    return this.applyPromotion(product);
   }
-
-  async;
 }

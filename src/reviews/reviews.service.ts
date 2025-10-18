@@ -14,7 +14,7 @@ export class ReviewsService {
     });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     return this.prisma.review.findMany({
       where: { id },
       include: {
