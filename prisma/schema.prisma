@@ -1,312 +1,346 @@
-  generator client {
-    provider = "prisma-client-js"
-  }
+generator client {
+  provider = "prisma-client-js"
+}
 
-  datasource db {
-    provider = "mysql"
-    url      = env("DATABASE_URL")
-  }
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
 
-  /// ---------- Enums ----------
-  enum ProductStatus {
-    NEW
-    HOT
-    BEST
-  }
+/// ---------- Enums ----------
+enum ProductStatus {
+  NEW
+  HOT
+  BEST
+}
 
-  enum Role {
-    CUSTOMER
-    ADMIN
-  }
+enum Role {
+  CUSTOMER
+  ADMIN
+}
 
-  enum OrderStatus {
-    PENDING
-    PAID
-    SHIPPED
-    COMPLETED
-    CANCELED
-    REFUNDED
-  }
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  COMPLETED
+  CANCELED
+  REFUNDED
+}
 
-  enum PaymentStatus {
-    PENDING
-    SUCCEEDED
-    FAILED
-    REFUNDED
-  }
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
 
-  enum PaymentMethod {
-    CARD
-    WALLET
-    COD
-    TRANSFER
-  }
+enum PaymentMethod {
+  CARD
+  WALLET
+  COD
+  TRANSFER
+}
 
-  /// ---------- Models ----------
-  model User {
-    id           String     @id @default(cuid())
-    name         String
-    email        String     @unique
-    phone        String?    @unique
-    password     String     // <-- Hash ở application layer (bcrypt/argon2)
-    role         Role       @default(CUSTOMER)
-    avatarUrl    String?
-    bio          String?
-    createdAt    DateTime   @default(now())
-    updatedAt    DateTime   @default(now()) @updatedAt
-    deletedAt    DateTime?
+/// ---------- Models ----------
+model User {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  phone     String?   @unique
+  password  String // <-- Hash ở application layer (bcrypt/argon2)
+  role      Role      @default(CUSTOMER)
+  avatarUrl String?
+  bio       String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+  deletedAt DateTime?
 
-    // relations
-    cart         CartItem[]
-    orders       Order[]
-    reviews      Review[]
-    favorites    Favorite[]
-    addresses    Address[]
-    payments     Payment[]
-  }
+  // relations
+  cart      CartItem[]
+  orders    Order[]
+  reviews   Review[]
+  favorites Favorite[]
+  addresses Address[]
+  payments  Payment[]
+}
 
-  model Category {
-    id          Int       @id @default(autoincrement())
-    name        String    @unique
-    description String?
-    iconUrl     String? 
-    createdAt   DateTime  @default(now()) 
-    updatedAt   DateTime @default(now()) @updatedAt
-    deletedAt   DateTime?
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  iconUrl     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+  deletedAt   DateTime?
 
-    products   Product[]
+  products Product[]
 
-    @@index([name])
-  }
+  @@index([name])
+}
 
-  model Brand {
-    id         Int       @id @default(autoincrement())
-    name       String
-    slug       String?   @unique
-    description String?
-    website    String?
-    logoUrl    String?
-    createdAt  DateTime  @default(now())
-    updatedAt  DateTime @default(now()) @updatedAt
-    deletedAt  DateTime?
+model Brand {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String?   @unique
+  description String?
+  website     String?
+  logoUrl     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+  deletedAt   DateTime?
 
-    products   Product[]
-    @@index([name])
-  }
+  products Product[]
 
-  model Product {
-    id          String           @id @default(cuid())
-    name        String
-    slug        String?          @unique
-    description String?
-    price       Decimal          @db.Decimal(10,2)
-    status      ProductStatus?
-    category    Category         @relation(fields: [categoryId], references: [id])
-    categoryId  Int
-    brand       Brand?           @relation(fields: [brandId], references: [id], onDelete: SetNull)
-    brandId     Int?
-    images      ProductImage[]
-    variants    ProductVariant[]
-    reviews     Review[]
-    createdAt   DateTime         @default(now())
-    updatedAt   DateTime         @default(now()) @updatedAt
-    deletedAt   DateTime?
+  @@index([name])
+}
 
-    CartItem    CartItem[]
-    OrderItem   OrderItem[]
-    Favorite    Favorite[]
+model Product {
+  id          String           @id @default(cuid())
+  name        String
+  slug        String?          @unique
+  description String?
+  price       Int
+  status      ProductStatus?
+  category    Category         @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  brand       Brand?           @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  brandId     String?
+  images      ProductImage[]
+  variants    ProductVariant[]
+  reviews     Review[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @default(now()) @updatedAt
+  deletedAt   DateTime?
 
-    @@index([name])
-    @@index([categoryId])
-    @@index([brandId])
-  }
+  CartItem           CartItem[]
+  OrderItem          OrderItem[]
+  Favorite           Favorite[]
+  PromotionOnProduct PromotionOnProduct[]
 
-  model ProductImage {
-    id         Int      @id @default(autoincrement())
-    url        String
-    altText    String?
-    product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-    productId  String
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @default(now()) @updatedAt
-    deletedAt  DateTime?
-  }
+  @@index([name])
+  @@index([categoryId])
+  @@index([brandId])
+}
 
-  model ProductVariant {
-    id         Int      @id @default(autoincrement())
-    product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-    productId  String
-    sku        String?  @unique
-    size       String?
-    color      String?
-    metadata   Json?    // extensible (e.g., weight, dimensions)
-    stock      Int      @default(0)
-    price      Decimal  @db.Decimal(10,2) // 🔥 giá thật của variant
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @default(now()) @updatedAt
-    deletedAt  DateTime?
+model ProductImage {
+  id        String    @id @default(cuid())
+  url       String
+  altText   String?
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+  deletedAt DateTime?
+}
 
-    OrderItem  OrderItem[]
-    CartItem   CartItem[]
-    Favorite   Favorite[]
-    Review     Review[]
+model ProductVariant {
+  id        String    @id @default(cuid())
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  sku       String?   @unique
+  size      String?
+  color     String?
+  metadata  Json? // extensible (e.g., weight, dimensions)
+  price     Int? // 🔥 giá thật của variant
+  stock     Int       @default(0)
+  imageUrl  String? // ảnh riêng cho variant (nếu có)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+  deletedAt DateTime?
 
-    @@index([productId])
-    @@index([sku])
-  }
+  OrderItem OrderItem[]
+  CartItem  CartItem[]
+  Favorite  Favorite[]
+  Review    Review[]
 
-  model Review {
-    id         Int      @id @default(autoincrement())
-    rating     Int      @default(0) // validate 1..5 in app layer
-    comment    String?
-    product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-    productId  String
-    user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    userId     String
-    variantId  Int
-    variant    ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @default(now()) @updatedAt
-    deletedAt  DateTime?
+  @@unique([productId, color, size]) // tránh trùng biến thể
+  @@index([productId])
+  @@index([sku])
+}
 
-    @@index([productId])
-    @@index([userId])
-  }
+model Review {
+  id        String         @id @default(cuid())
+  rating    Int            @default(0) // validate 1..5 in app layer
+  comment   String?
+  product   Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @default(now()) @updatedAt
+  deletedAt DateTime?
 
-  model Favorite {
-    id         Int      @id @default(autoincrement())
-    user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    userId     String
-    product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-    productId  String
-    variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
-    variantId  Int?
-    createdAt  DateTime @default(now())
-    deletedAt  DateTime?
+  @@index([productId])
+  @@index([userId])
+}
 
-    @@unique([userId, productId, variantId]) // avoid duplicates (variant-specific)
-    @@index([userId])
-    @@index([productId])
-  }
+model Favorite {
+  id        String          @id @default(cuid())
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  variantId String?
+  createdAt DateTime        @default(now())
+  deletedAt DateTime?
 
-  model CartItem {
-    id         String    @id @default(cuid())
-    user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-    userId     String
-    product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-    productId  String
-    variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
-    variantId  Int?
-    quantity   Int       @default(1)
-    priceAtAdd Decimal   @db.Decimal(10,2) // 💰 Giá tại thời điểm thêm vào giỏ
-    createdAt  DateTime  @default(now())
-    updatedAt  DateTime  @default(now()) @updatedAt
-    deletedAt  DateTime?
+  @@unique([userId, productId, variantId]) // avoid duplicates (variant-specific)
+  @@index([userId])
+  @@index([productId])
+}
 
-    @@unique([userId, productId, variantId]) // one cart line per variant
-    @@index([userId])
-  }
+model CartItem {
+  id         String          @id @default(cuid())
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  product    Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+  variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  variantId  String?
+  quantity   Int             @default(1)
+  priceAtAdd Int
+  totalPrice Int // totalPrice * quantity
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @default(now()) @updatedAt
+  deletedAt  DateTime?
 
-  model Order {
-    id             String       @id @default(cuid())
-    user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-    userId         String?
-    status         OrderStatus  @default(PENDING)
-    subtotal       Decimal      @db.Decimal(10,2)
-    shippingFee    Decimal      @db.Decimal(10,2) @default("0.00")
-    discountAmount Decimal?     @db.Decimal(10,2)
-    total          Decimal      @db.Decimal(10,2)
-    promotionCode  String?
-    shippingAddressId Int?      // optional relation to Address
-    shippingAddress Address?    @relation(fields: [shippingAddressId], references: [id], onDelete: SetNull)
-    paymentMethod  PaymentMethod?
-    createdAt      DateTime     @default(now())
-    updatedAt      DateTime     @default(now()) @updatedAt
-    deletedAt      DateTime?
+  @@unique([userId, productId, variantId]) // one cart line per variant
+  @@index([userId])
+}
 
-    items          OrderItem[]
-    payments       Payment[]
+model Order {
+  id     String  @id @default(cuid())
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId String?
 
-    @@index([userId])
-    @@index([status])
-    @@index([createdAt])
-  }
+  status        OrderStatus    @default(PENDING)
+  paymentStatus PaymentStatus  @default(PENDING)
+  paymentMethod PaymentMethod? // COD, VNPAY, MOMO, etc.
 
-  model OrderItem {
-    id          Int      @id @default(autoincrement())
-    order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-    orderId     String
-    product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-    productId   String
-    variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
-    variantId   Int?
-    quantity    Int
-    unitPrice   Decimal  @db.Decimal(10,2) // price at purchase
-    totalPrice  Decimal  @db.Decimal(10,2)
-    createdAt   DateTime @default(now())
-    updatedAt  DateTime  @default(now()) @updatedAt
-    deletedAt   DateTime?
+  subtotalPrice    Int // tổng tiền hàng (chưa tính ship, discount)
+  shippingFeePrice Int @default(0)
+  discountPrice    Int @default(0)
+  totalPrice       Int // tổng cuối cùng = subtotal + ship - discount
 
-    @@index([orderId])
-    @@index([productId])
-  }
+  promotionCode     String?
+  shippingAddressId String?
+  shippingAddress   Address? @relation(fields: [shippingAddressId], references: [id], onDelete: SetNull)
 
-  model Address {
-    id          Int      @id @default(autoincrement())
-    user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    userId      String
-    label       String?  // e.g., "Home", "Office"
-    recipient   String
-    phone       String
-    line1       String
-    line2       String?
-    city        String
-    state       String?
-    postalCode  String?
-    country     String
-    isDefault   Boolean  @default(false)
-    createdAt   DateTime @default(now())
-    updatedAt  DateTime  @default(now()) @updatedAt
-    deletedAt   DateTime?
+  items    OrderItem[]
+  payments Payment[]
 
-    order Order[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
-    @@index([userId])
-    @@index([isDefault])
-  }
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
 
-  model Promotion {
-    id            Int      @id @default(autoincrement())
-    code          String   @unique
-    description   String?
-    discountPercent Decimal? @db.Decimal(5,2)
-    discountAmount  Decimal? @db.Decimal(10,2)
-    active        Boolean  @default(true)
-    startsAt      DateTime?
-    expiresAt     DateTime?
-    maxUses       Int?
-    usedCount     Int      @default(0)
-    createdAt     DateTime @default(now())
-    updatedAt     DateTime  @default(now()) @updatedAt
+model OrderItem {
+  id      String @id @default(cuid())
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String
 
-    @@index([code])
-    @@index([active])
-  }
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  variantId String?
 
-  model Payment {
-    id             String         @id @default(cuid())
-    order          Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
-    orderId        String?
-    user           User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-    userId         String?
-    provider       String         // e.g., stripe, paypal
-    method         PaymentMethod
-    status         PaymentStatus  @default(PENDING)
-    amount         Decimal        @db.Decimal(10,2)
-    currency       String         @default("USD")
-    transactionId  String?        @unique
-    metadata       Json?
-    createdAt      DateTime       @default(now())
-    updatedAt       DateTime      @default(now()) @updatedAt
+  quantity      Int
+  unitPrice     Int
+  totalPrice    Int
+  discountPrice Int @default(0)
 
-  }
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+  deletedAt DateTime?
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Address {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  label      String? // e.g., "Home", "Office"
+  recipient  String
+  phone      String
+  line1      String
+  line2      String?
+  city       String
+  state      String?
+  postalCode String?
+  country    String
+  isDefault  Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
+  deletedAt  DateTime?
+
+  order Order[]
+
+  @@index([userId])
+  @@index([isDefault])
+}
+
+model Promotion {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  description     String?
+  discountPercent Decimal?  @db.Decimal(5, 2)
+  discountAmount  Decimal?  @db.Decimal(10, 2)
+  active          Boolean   @default(true)
+  startsAt        DateTime?
+  expiresAt       DateTime?
+  maxUses         Int?
+  usedCount       Int       @default(0)
+
+  products PromotionOnProduct[] // quan hệ n-n với Product
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([code])
+  @@index([active])
+}
+
+model PromotionOnProduct {
+  promotion   Promotion @relation(fields: [promotionId], references: [id])
+  promotionId String
+
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+
+  @@id([promotionId, productId])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  order         Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  orderId       String?
+  user          User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId        String?
+  provider      String // e.g., stripe, paypal
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  amount        Int
+  currency      String        @default("USD")
+  transactionId String?       @unique
+  metadata      Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @default(now()) @updatedAt
+}
+
+// OrderItem.discountPrice → giảm giá từng sản phẩm (theo variant, flash sale, v.v.)
+// Order.discountPrice → giảm giá toàn đơn (voucher, khuyến mãi mã code)
+// totalPrice của đơn = (subtotalPrice - itemDiscount - orderDiscount) + shippingFeePrice
+//itemDiscount = ∑ item.discountCents * item.quantity
+//orderDiscount = voucherDiscountCents
+//totalDiscount = itemDiscount + orderDiscount
+//total = subtotal + shippingFee - totalDiscount
