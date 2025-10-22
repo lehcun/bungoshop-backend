@@ -7,7 +7,6 @@ export class ProductsService {
 
   // ===== Utility function =====
   private applyPromotion(product: any) {
-    console.log('product.PromotionOnProduct: ', product.PromotionOnProduct);
     const validPromos =
       product.PromotionOnProduct?.filter(
         (p: any) =>
@@ -34,12 +33,9 @@ export class ProductsService {
         discountPercent = promo.discountPercent ?? 0;
         salePrice = Math.round(product.price * (1 - discountPercent));
       } else if (promo.discountType === 'AMOUNT') {
-        salePrice = Math.max(salePrice, product.price - promo.discountAmount);
-        discountPercent = Math.round(
-          (promo.discountAmount / product.price) * 100,
-        );
+        salePrice = Math.min(salePrice, product.price - promo.discountAmount);
+        discountPercent = salePrice / product.price;
       }
-      console.log('discountPercent: ', discountPercent);
       // Nếu giảm nhiều hơn thì chọn cái này
       if (salePrice < bestSalePrice) {
         bestSalePrice = salePrice;
@@ -51,7 +47,7 @@ export class ProductsService {
     return {
       ...product,
       salePrice: bestSalePrice,
-      discountPercent: bestDiscountPercent,
+      discountPercent: Number(Math.floor(bestDiscountPercent * 100)),
       promotion: bestPromo,
     };
   }
@@ -63,7 +59,7 @@ export class ProductsService {
     priceRange?: string;
     sort?: string;
   }) {
-    let where: any = {};
+    const where: any = {};
     if (filters.categories && filters.categories.length > 0) {
       where.category = {
         name: { in: filters.categories },
@@ -137,11 +133,6 @@ export class ProductsService {
   async findAll() {
     const products = this.prisma.product.findMany({
       include: {
-        category: true,
-        brand: true,
-        images: true,
-        variants: true,
-        reviews: true,
         PromotionOnProduct: {
           include: {
             promotion: true,
@@ -154,14 +145,19 @@ export class ProductsService {
 
   // Lấy chi tiết 1 sản phẩm
   async findOne(id: string) {
-    const product = this.prisma.product.findUnique({
+    const product = await this.prisma.product.findUnique({
       where: { id },
       include: {
-        category: true,
-        brand: true,
+        // category: true,
+        // brand: true,
         images: true,
         variants: true,
         reviews: true,
+        PromotionOnProduct: {
+          include: {
+            promotion: true,
+          },
+        },
       },
     });
     if (!product) return null;
