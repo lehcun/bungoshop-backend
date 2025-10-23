@@ -1,11 +1,24 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { CartService } from './cart.service';
 import { AuthGuard } from '@nestjs/passport';
 
+//Hai cai nay se lam DTO sau
 export interface CartItemPayload {
   productId: string;
   variantId: string;
   quantity: number;
+}
+export interface CartItemIdPayload {
+  id: string;
 }
 
 @Controller('cart')
@@ -23,7 +36,13 @@ export class CartController {
   async addToCartItem(@Req() req, @Body() payload: CartItemPayload) {
     const userId = req.user.id;
     const { productId, variantId, quantity } = payload;
-    console.log(userId, productId, variantId, quantity);
     return this.cartService.addCartItem(userId, productId, variantId, quantity);
+  }
+
+  @Delete(':id')
+  @UseGuards(AuthGuard('jwt'))
+  async removeCartItem(@Req() req, @Param() payload: CartItemIdPayload) {
+    const userId = req.user.id;
+    return this.cartService.removeCartItem(userId, payload.id);
   }
 }
