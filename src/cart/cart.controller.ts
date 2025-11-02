@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -19,6 +20,11 @@ export interface CartItemPayload {
 }
 export interface CartItemIdPayload {
   id: string;
+}
+
+export interface CartUpdatePayload {
+  id: string;
+  quantity: number;
 }
 
 @Controller('cart')
@@ -44,5 +50,13 @@ export class CartController {
   async removeCartItem(@Req() req, @Param() payload: CartItemIdPayload) {
     const userId = req.user.id;
     return this.cartService.removeCartItem(userId, payload.id);
+  }
+
+  @Patch(':id')
+  @UseGuards(AuthGuard('jwt'))
+  async(@Req() req, @Body() payload: CartUpdatePayload) {
+    const userId = req.user.id;
+    const { id, quantity } = payload;
+    return this.cartService.updateQuantity(userId, id, quantity);
   }
 }

@@ -9,4 +9,9 @@ export class CategoriesController {
   async getAll() {
     return this.categoriesService.findAll();
   }
+
+  @Get('/trend')
+  async getTrend() {
+    return this.categoriesService.findTrend();
+  }
 }

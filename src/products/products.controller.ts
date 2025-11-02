@@ -44,6 +44,11 @@ export class ProductsController {
     return this.productsService.findAll();
   }
 
+  @Get('/search')
+  async getBySearchQuery(@Query('keyword') keyword?: string) {
+    return this.productsService.findBySearchParam(keyword);
+  }
+
   @Get(':id')
   async getOne(@Param('id') id: string) {
     return this.productsService.findOne(id);

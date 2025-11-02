@@ -163,4 +163,24 @@ export class ProductsService {
     if (!product) return null;
     return this.applyPromotion(product);
   }
+
+  //Lấy sản phẩm theo searchParams
+  async findBySearchParam(query: string) {
+    if (!query) return [];
+    return await this.prisma.product.findMany({
+      where: {
+        OR: [
+          { name: { contains: query } },
+          // { description: { contains: query } },
+          // { brand: { contains: query } },
+        ],
+      },
+      include: {
+        images: true,
+        category: true,
+        reviews: true,
+      },
+      take: 8,
+    });
+  }
 }

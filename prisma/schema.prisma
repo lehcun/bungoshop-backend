@@ -19,6 +19,12 @@ enum Role {
   ADMIN
 }
 
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
 enum OrderStatus {
   PENDING
   PAID
@@ -51,10 +57,11 @@ enum DiscountType {
 model User {
   id        String    @id @default(cuid())
   name      String
-  email     String    @unique
+  email     String    @unique 
   phone     String?   @unique
   password  String // <-- Hash ở application layer (bcrypt/argon2)
   role      Role      @default(CUSTOMER)
+  status    AccountStatus      @default(ACTIVE)
   avatarUrl String?
   bio       String?
   createdAt DateTime  @default(now())

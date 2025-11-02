@@ -55,4 +55,20 @@ export class UserController {
   delete(@Param('id') id: string) {
     return this.userService.delete(id);
   }
+
+  @Post('address')
+  createAddress(
+    @Body()
+    body: {
+      userId: string;
+      recipient: string;
+      city: string;
+      line1: string;
+      phone: string;
+      label: string;
+    },
+  ) {
+    console.log('body: ', body);
+    return this.userService.createAddress(body);
+  }
 }

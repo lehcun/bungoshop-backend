@@ -38,9 +38,9 @@ export class CartService {
       return await this.prisma.cartItem.update({
         where: { id: (await existing).id },
         data: {
-          quantity: (await existing).quantity + (quantity && 1),
+          quantity: (await existing).quantity + quantity,
           totalPrice:
-            ((await existing).quantity + (quantity && 1)) *
+            ((await existing).quantity + quantity) *
             (await existing).priceAtAdd,
         },
       });
@@ -81,7 +81,7 @@ export class CartService {
     const result = await this.prisma.cartItem.deleteMany({
       where: {
         id: cartItemId,
-        userId: userId,
+        userId,
       },
     });
 
@@ -92,6 +92,25 @@ export class CartService {
     return {
       message: 'Đã xóa sản phẩm khỏi giỏ hàng',
       deletedCount: result.count,
+    };
+  }
+
+  async updateQuantity(userId: string, cartItemId: string, quantity: number) {
+    if (!userId || !cartItemId) {
+      throw new Error('Thiếu thông tin user hoặc cart item');
+    }
+    const result = await this.prisma.cartItem.updateMany({
+      where: { id: cartItemId, userId },
+      data: {
+        quantity,
+      },
+    });
+    if (result.count === 0) {
+      throw new Error('Không tìm thấy sản phẩm trong giỏ hàng của user này');
+    }
+
+    return {
+      message: 'Đã update sản phẩm trong giỏ hàng',
     };
   }
 }
