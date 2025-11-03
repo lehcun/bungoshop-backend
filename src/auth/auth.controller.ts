@@ -9,4 +9,11 @@ export class AuthController {
   async login(@Body() body: { email: string; password: string }) {
     return this.authService.signIn(body.email, body.password);
   }
+
+  @Post('register')
+  async signup(
+    @Body() body: { name: string; email: string; password: string },
+  ) {
+    return this.authService.signUp(body.name, body.email, body.password);
+  }
 }
