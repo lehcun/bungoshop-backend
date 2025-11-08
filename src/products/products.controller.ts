@@ -11,6 +11,8 @@ export class ProductsController {
     @Query('brands') brand?: string | string[],
     @Query('priceRange') priceRange?: string,
     @Query('sort') sort?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
   ) {
     // ⚙️ Chuyển category thành mảng luôn
     const categories = category
@@ -25,6 +27,20 @@ export class ProductsController {
         ? brand
         : brand.split(',')
       : [];
+
+    // ⚙️ Nếu có page/limit thì gọi pagination
+    if (page && limit) {
+      return this.productsService.findPaginatedProducts(
+        Number(page),
+        Number(limit),
+        {
+          categories,
+          brands,
+          priceRange,
+          sort,
+        },
+      );
+    }
 
     return this.productsService.findFilter({
       categories,

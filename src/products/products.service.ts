@@ -107,6 +107,71 @@ export class ProductsService {
     return (await products).map((p) => this.applyPromotion(p));
   }
 
+  async findPaginatedProducts(page: number, limit: number, filters?: any) {
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (filters.categories && filters.categories.length > 0) {
+      where.category = {
+        name: { in: filters.categories },
+      };
+    }
+
+    if (filters.brands && filters.brands.length > 0) {
+      where.brand = {
+        name: { in: filters.brands },
+      };
+    }
+
+    let orderBy: any = {};
+    switch (filters.sort) {
+      case 'priceAsc':
+        orderBy = { price: 'asc' };
+        break;
+      case 'priceDesc':
+        orderBy = { price: 'desc' };
+        break;
+      case 'newest':
+        orderBy = { createdAt: 'asc' };
+        break;
+      case 'oldest':
+        orderBy = { createdAt: 'desc' };
+        break;
+    }
+
+    const products = await this.prisma.product.findMany({
+      skip,
+      take: limit,
+      where,
+      orderBy,
+      include: {
+        category: true,
+        brand: true,
+        images: true,
+        variants: true,
+        reviews: true,
+        PromotionOnProduct: {
+          include: {
+            promotion: true,
+          },
+        },
+      },
+    });
+
+    const withPromo = products.map((p) => this.applyPromotion(p));
+
+    const total = await this.prisma.product.count();
+    return {
+      data: withPromo,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   async findHot(count: number) {
     const products = this.prisma.product.findMany({
       where: {
