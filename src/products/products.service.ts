@@ -72,6 +72,18 @@ export class ProductsService {
       };
     }
 
+    if (filters.priceRange) {
+      const range = filters.priceRange;
+
+      if (range.includes('-')) {
+        const [min, max] = range.split('-').map(Number);
+        where.price = { gte: min * 1000, lte: max * 1000 };
+      } else if (range.includes('+')) {
+        const min = Number(range.replace('+', ''));
+        where.price = { gte: min * 1000 };
+      }
+    }
+
     let orderBy: any = {};
     switch (filters.sort) {
       case 'priceAsc':
@@ -137,6 +149,18 @@ export class ProductsService {
       case 'oldest':
         orderBy = { createdAt: 'desc' };
         break;
+    }
+
+    if (filters.priceRange) {
+      const range = filters.priceRange;
+
+      if (range.includes('-')) {
+        const [min, max] = range.split('-').map(Number);
+        where.price = { gte: min * 1000, lte: max * 1000 };
+      } else if (range.includes('+')) {
+        const min = Number(range.replace('+', ''));
+        where.price = { gte: min * 1000 };
+      }
     }
 
     const products = await this.prisma.product.findMany({
