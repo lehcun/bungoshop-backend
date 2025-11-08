@@ -9,13 +9,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: 'MY_SECRET_KEY',
+      secretOrKey: process.env.JWT_SECRET,
     });
   }
 
   async validate(payload: any) {
     // Lấy user đầy đủ từ DB
-    const user = await this.userService.findOne(payload.usedId);
+    const user = await this.userService.findOne(payload.sub); // Trước là payload.usedId
     if (!user) {
       throw new UnauthorizedException('Không tìm thấy người dùng');
     }

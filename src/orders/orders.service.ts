@@ -31,7 +31,6 @@ export class OrdersService {
       where: { userId },
       include: { product: true, variant: true },
     });
-    console.log(cartItems);
 
     for (const item of cartItems) {
       if (item.quantity > item.variant.stock) {

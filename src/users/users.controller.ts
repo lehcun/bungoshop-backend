@@ -7,8 +7,8 @@ import {
   Body,
   Param,
   UseGuards,
-  Request,
   UnauthorizedException,
+  Req,
 } from '@nestjs/common';
 import { UserService } from './users.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -18,7 +18,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
-  findAll() {
+  async findAll() {
     return this.userService.findAll();
   }
 
@@ -29,7 +29,7 @@ export class UserController {
 
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
-  login(@Request() req) {
+  async login(@Req() req) {
     if (!req.user) {
       throw new UnauthorizedException('Không tìm thấy thông tin người dùng');
     }

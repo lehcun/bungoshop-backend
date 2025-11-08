@@ -19,9 +19,7 @@ export class AuthService {
   async signIn(email: string, password: string): Promise<any> {
     const user = await this.usersService.findOneByEmail(email);
     const valid = await bcrypt.compare(password, user.password); // bắt buộc phải để biến thô trước băm
-    console.log(user.password, password);
 
-    console.log(user, valid);
     if (!user || !valid) {
       throw new UnauthorizedException('Sai tài khoản hoặc mật khẩu');
     }
@@ -29,17 +27,15 @@ export class AuthService {
       username: user.name,
       phone: user.phone,
       email: user.email,
-      userId: user.id,
+      sub: user.id,
     };
-    const token = this.jwtService.sign(payload);
-
+    const token = await this.jwtService.signAsync(payload); // sign -> signAsync
     const { password: pw, ...userWithoutPass } = user;
     return { access_token: token, user: userWithoutPass };
   }
 
   async signUp(name: string, email: string, password: string): Promise<any> {
     const exist = await this.usersService.findOneByEmail(email);
-    console.log('exist: ', exist);
     if (exist) throw new ConflictException('Email đã tồn tại');
     const hashPassword = await bcrypt.hash(password, 10);
 
