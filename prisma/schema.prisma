@@ -72,7 +72,7 @@ model User {
   cart      CartItem[]
   orders    Order[]
   reviews   Review[]
-  favorites Favorite[]
+  favourites Favourite[]
   addresses Address[]
   payments  Payment[]
 }
@@ -127,7 +127,7 @@ model Product {
 
   CartItem           CartItem[]
   OrderItem          OrderItem[]
-  Favorite           Favorite[]
+  Favourite           Favourite[]
   PromotionOnProduct PromotionOnProduct[]
 
   @@index([name])
@@ -163,7 +163,7 @@ model ProductVariant {
 
   OrderItem OrderItem[]
   CartItem  CartItem[]
-  Favorite  Favorite[]
+  Favourite  Favourite[]
   Review    Review[]
 
   @@unique([productId, color, size]) // tránh trùng biến thể
@@ -189,7 +189,7 @@ model Review {
   @@index([userId])
 }
 
-model Favorite {
+model Favourite {
   id        String          @id @default(cuid())
   user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String

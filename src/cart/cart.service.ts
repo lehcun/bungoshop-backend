@@ -6,7 +6,7 @@ import { ProductsService } from 'src/products/products.service';
 @Injectable()
 export class CartService {
   constructor(
-    private prisma: PrismaService,
+    private readonly prisma: PrismaService,
     private productsService: ProductsService,
   ) {}
 

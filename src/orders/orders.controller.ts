@@ -19,7 +19,7 @@ export interface CheckoutPayload {
 @Controller('orders')
 export class OrdersController {
   constructor(
-    private readonly orderService: OrdersService,
+    private orderService: OrdersService,
     private readonly prisma: PrismaService,
   ) {}
 
