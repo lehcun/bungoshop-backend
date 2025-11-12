@@ -35,6 +35,12 @@ export class UserController {
     };
   }
 
+  @Get('address')
+  @UseGuards(AuthGuard('jwt'))
+  async getAddress(@Req() req) {
+    return await this.userService.findAddressById(req.user.id);
+  }
+
   @Post()
   create(@Body() body: { name: string; email: string; password: string }) {
     return this.userService.create(body);
@@ -54,7 +60,7 @@ export class UserController {
   }
 
   @Post('address')
-  createAddress(
+  async createAddress(
     @Body()
     body: {
       userId: string;
@@ -66,6 +72,6 @@ export class UserController {
     },
   ) {
     console.log('body: ', body);
-    return this.userService.createAddress(body);
+    return await this.userService.createAddress(body);
   }
 }

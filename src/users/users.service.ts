@@ -12,6 +12,12 @@ export class UserService {
     });
   }
 
+  async findAddressById(userId: string) {
+    return this.prisma.address.findMany({
+      where: { id: userId },
+    });
+  }
+
   async findAll(): Promise<User[]> {
     return this.prisma.user.findMany({
       include: {
