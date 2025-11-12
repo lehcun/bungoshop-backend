@@ -30,11 +30,8 @@ export class UserController {
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
   async login(@Req() req) {
-    if (!req.user) {
-      throw new UnauthorizedException('Không tìm thấy thông tin người dùng');
-    }
     return {
-      user: req.user, // Đã có include đầy đủ từ JwtStrategy
+      user: req.user,
     };
   }
 

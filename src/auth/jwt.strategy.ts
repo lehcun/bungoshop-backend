@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
+import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UserService } from 'src/users/users.service';
 
@@ -7,19 +8,26 @@ import { UserService } from 'src/users/users.service';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private userService: UserService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      //Thay từ đọc header sang etractors
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (req: Request) => req?.cookies?.access_token, // cấu hình thêm để lấy accesstoken từ cookie
+      ]),
       ignoreExpiration: false,
       secretOrKey: process.env.JWT_SECRET,
     });
   }
 
   async validate(payload: any) {
-    // Lấy user đầy đủ từ DB
-    const user = await this.userService.findOne(payload.sub); // Trước là payload.usedId
-    if (!user) {
-      throw new UnauthorizedException('Không tìm thấy người dùng');
-    }
-    const { password, ...userWithoutPass } = user;
-    return userWithoutPass; // req.user = user đầy đủ
+    return { userId: payload.sub, email: payload.email };
   }
+
+  // async validate(payload: any) {
+  //   // Lấy user đầy đủ từ DB
+  //   const user = await this.userService.findOne(payload.sub); // Trước là payload.usedId
+  //   if (!user) {
+  //     throw new UnauthorizedException('Không tìm thấy người dùng');
+  //   }
+  //   const { password, ...userWithoutPass } = user;
+  //   return userWithoutPass; // req.user = user đầy đủ
+  // }
 }
