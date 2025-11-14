@@ -7,13 +7,13 @@ export class UserService {
   constructor(private prisma: PrismaService) {}
 
   async findOneByEmail(email: string) {
-    return this.prisma.user.findUnique({
+    return await this.prisma.user.findUnique({
       where: { email }, // 👈 email phải là @unique trong Prisma schema
     });
   }
 
   async findAddressById(userId: string) {
-    return this.prisma.address.findMany({
+    return await this.prisma.address.findMany({
       where: { id: userId },
     });
   }

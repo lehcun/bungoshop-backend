@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { AuthGuard } from '@nestjs/passport';
-import { Response } from 'express';
 
 //Hai cai nay se lam DTO sau
 export interface CartItemPayload {
@@ -25,7 +24,7 @@ export interface CartItemIdPayload {
 
 export interface CartUpdatePayload {
   id: string;
-  quantity: number;
+  quantityChange: number;
 }
 
 @Controller('cart')
@@ -63,7 +62,9 @@ export class CartController {
   @UseGuards(AuthGuard('jwt'))
   async updateCartItem(@Req() req, @Body() payload: CartUpdatePayload) {
     const userId = req.user.userId;
-    const { id, quantity } = payload;
-    return await this.cartService.updateQuantity(userId, id, quantity);
+
+    // quantityChange dương là tăng còn âm là giảm
+    const { id, quantityChange } = payload;
+    return await this.cartService.updateQuantity(userId, id, quantityChange);
   }
 }

@@ -95,14 +95,24 @@ export class CartService {
     };
   }
 
-  async updateQuantity(userId: string, cartItemId: string, quantity: number) {
+  async updateQuantity(
+    userId: string,
+    cartItemId: string,
+    quantityChange: number,
+  ) {
     if (!userId || !cartItemId) {
       throw new Error('Thiếu thông tin user hoặc cart item');
     }
+    const cartItem = await this.prisma.cartItem.findUnique({
+      where: { id: cartItemId, userId },
+    });
+
+    const currQuantity = cartItem.quantity;
+
     const result = await this.prisma.cartItem.updateMany({
       where: { id: cartItemId, userId },
       data: {
-        quantity,
+        quantity: currQuantity + quantityChange,
       },
     });
     if (result.count === 0) {

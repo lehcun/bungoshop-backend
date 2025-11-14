@@ -45,13 +45,32 @@ export class AuthController {
       secure: isProd,
       sameSite: isProd ? 'none' : 'strict',
     });
-    res.send('Đã xóa cookie');
+
+    return { message: 'Đăng xuất thành công' };
   }
 
   @Post('register')
   async signup(
     @Body() body: { name: string; email: string; password: string },
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return this.authService.signUp(body.name, body.email, body.password);
+    const signUpResult = await this.authService.signUp(
+      body.name,
+      body.email,
+      body.password,
+    );
+    const token = signUpResult.access_token;
+    const user = signUpResult.user;
+
+    const isProd = process.env.NODE_ENV === 'production';
+    res.cookie('access_token', token, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'strict',
+      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      path: '/',
+    });
+
+    return { user, message: 'Dang ky thanh cong' };
   }
 }
