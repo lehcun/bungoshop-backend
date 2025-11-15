@@ -18,16 +18,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    return { userId: payload.sub, email: payload.email };
+    // Lấy user đầy đủ từ DB
+    const user = await this.userService.findOne(payload.sub); // Trước là payload.usedId == sub
+    if (!user) {
+      throw new UnauthorizedException('Không tìm thấy người dùng');
+    }
+    const { password, ...userWithoutPass } = user;
+    return userWithoutPass; // req.user = user đầy đủ
   }
-
-  // async validate(payload: any) {
-  //   // Lấy user đầy đủ từ DB
-  //   const user = await this.userService.findOne(payload.sub); // Trước là payload.usedId
-  //   if (!user) {
-  //     throw new UnauthorizedException('Không tìm thấy người dùng');
-  //   }
-  //   const { password, ...userWithoutPass } = user;
-  //   return userWithoutPass; // req.user = user đầy đủ
-  // }
 }

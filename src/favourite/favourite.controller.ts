@@ -28,8 +28,10 @@ export class FavouriteController {
   }
 
   @Post()
-  async create(@Body() body: FavouritePayload) {
-    const { userId, productId } = body;
+  @UseGuards(AuthGuard('jwt'))
+  async create(@Req() req, @Body() body: FavouritePayload) {
+    const userId = req.user.id;
+    const { productId } = body;
     return await this.favouriteService.create(userId, productId);
   }
 

@@ -31,7 +31,6 @@ export class UserService {
     if (!id) return null;
     return this.prisma.user.findUnique({
       where: { id },
-      include: { cart: true, favourites: true, addresses: true, orders: true },
     });
   }
 

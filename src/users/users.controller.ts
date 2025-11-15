@@ -29,7 +29,8 @@ export class UserController {
 
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
-  async login(@Req() req) {
+  async getCurrentUserInfo(@Req() req) {
+    console.log('req.user', req.user);
     return {
       user: req.user,
     };

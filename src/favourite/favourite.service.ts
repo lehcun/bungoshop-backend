@@ -20,6 +20,7 @@ export class FavouriteService {
       userId,
       productId,
     };
+    console.log(userId, productId);
     return await this.prisma.favourite.create({
       data,
       include: { product: true },
