@@ -13,6 +13,7 @@ import { BrandsModule } from './brands/brands.module';
 import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
 import { FavouriteModule } from './favourite/favourite.module';
+import { ProductModule } from './product/product.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { FavouriteModule } from './favourite/favourite.module';
     CartModule,
     OrdersModule,
     FavouriteModule,
+    ProductModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
