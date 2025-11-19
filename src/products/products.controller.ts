@@ -50,7 +50,7 @@ export class ProductsController {
     });
   }
 
-  @Get('/display/:id')
+  @Get('/hot/:id')
   async getHot(@Param('id') count: string) {
     return this.productsService.findHot(Number(count));
   }

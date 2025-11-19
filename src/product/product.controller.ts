@@ -1,4 +1,12 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+} from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { Product } from '@prisma/client';
@@ -11,5 +19,11 @@ export class ProductController {
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateProductDto): Promise<Product> {
     return await this.productService.create(dto);
+  }
+
+  @Delete(':id')
+  async remove(@Param() param: { id: string }) {
+    const { id } = param;
+    return await this.productService.removeProduct(id);
   }
 }
