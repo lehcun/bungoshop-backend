@@ -27,6 +27,10 @@ export class ProductService {
   }
 
   async create(dto: CreateProductDto): Promise<Product> {
+    console.log('dto: ', dto);
+    const category = await this.prisma.category.findUnique({
+      where: { name: dto.categoryId },
+    });
     const slug = dto.slug || (await this.generateUniqueSlug(dto.name));
     return await this.prisma.product.create({
       data: {
@@ -35,7 +39,7 @@ export class ProductService {
         description: dto.description,
         price: dto.price,
         status: dto.status,
-        categoryId: dto.categoryId,
+        categoryId: category.id,
         brandId: dto.brandId,
 
         images: dto.images

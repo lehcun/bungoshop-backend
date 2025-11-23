@@ -74,6 +74,7 @@ export class CartService {
   // }
 
   async removeCartItem(userId: string, cartItemId: string) {
+    console.log(userId, cartItemId);
     if (!userId || !cartItemId) {
       throw new Error('Thiếu thông tin user hoặc cart item');
     }

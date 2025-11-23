@@ -33,14 +33,14 @@ export class CartController {
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
   async getMyCart(@Req() req) {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     return await this.cartService.findCartByUserId(userId);
   }
 
   @Post('/add')
   @UseGuards(AuthGuard('jwt'))
   async addToCartItem(@Req() req, @Body() payload: CartItemPayload) {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const { productId, variantId, quantity } = payload;
     return await this.cartService.addCartItem(
       userId,
@@ -53,7 +53,7 @@ export class CartController {
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'))
   async removeCartItem(@Req() req, @Param() payload: CartItemIdPayload) {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     console.log(userId);
     return await this.cartService.removeCartItem(userId, payload.id);
   }
@@ -61,7 +61,7 @@ export class CartController {
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'))
   async updateCartItem(@Req() req, @Body() payload: CartUpdatePayload) {
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     // quantityChange dương là tăng còn âm là giảm
     const { id, quantityChange } = payload;

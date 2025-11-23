@@ -18,10 +18,14 @@ export class AuthService {
 
   async signIn(email: string, password: string): Promise<any> {
     const user = await this.usersService.findOneByEmail(email);
+
+    if (!user) {
+      throw new ConflictException('Sai email');
+    }
     const valid = await bcrypt.compare(password, user.password); // bắt buộc phải để biến thô trước băm
 
-    if (!user || !valid) {
-      throw new UnauthorizedException('Sai tài khoản hoặc mật khẩu');
+    if (!valid) {
+      throw new UnauthorizedException('Sai mật khẩu');
     }
     const payload = {
       username: user.name,
