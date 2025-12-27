@@ -25,12 +25,36 @@ export class OrdersController {
 
   @Get()
   async getAll() {
-    return this.orderService.findAll();
+    return await this.orderService.findAll();
   }
 
-  @Get('/month/:id')
-  async getLastMonth(@Param('id') month: number) {
-    return this.orderService.findByMonth(month);
+  @Get('/month')
+  async getLastMonth() {
+    const currMonth = new Date().getMonth() + 1;
+    const currMonthOrders = await this.orderService.findByMonth(currMonth);
+    const prevMonthOrders = await this.orderService.findByMonth(currMonth - 1);
+
+    const currMonthlyRevenue = currMonthOrders.reduce(
+      (acc: number, curr) => acc + curr.totalPrice,
+      0,
+    );
+
+    const preMonthlyRevenue = prevMonthOrders.reduce(
+      (acc: number, curr) => acc + curr.totalPrice,
+      0,
+    );
+
+    //Cái này sẽ để đi chỗ khác
+    const allOrders = await this.orderService.findAll();
+
+    return {
+      revenueGrowth: currMonthlyRevenue - preMonthlyRevenue,
+      momGrowth:
+        ((currMonthlyRevenue - preMonthlyRevenue) / preMonthlyRevenue) * 100,
+
+      totalOrder: allOrders.length,
+      currMonthlyCount: currMonthOrders.length,
+    };
   }
 
   @Get('/user/history')

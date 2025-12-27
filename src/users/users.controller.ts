@@ -19,14 +19,19 @@ export class UserController {
 
   @Get()
   async findAll() {
-    return this.userService.findAll();
+    return await this.userService.findAll();
+  }
+
+  //Lấy luôn tháng hiện tại
+  @Get('/month')
+  async findByMonth() {
+    return await this.userService.findByMonth();
   }
 
   // @Get(':id')
   // findOne(@Param('id') id: string) {
   //   return this.userService.findOne(id);
   // }
-
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
   async getCurrentUserInfo(@Req() req) {

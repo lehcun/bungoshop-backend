@@ -682,6 +682,16 @@ async function main() {
           'https://res.cloudinary.com/dbvlsf9bi/image/upload/v1759736844/BuAnCuopChibi_kpa9lb.png',
         bio: 'Đam mê thể thao và thời trang nam tính.',
       },
+      {
+        name: 'Cuongle',
+        email: 'lehcun1099@gmail.com',
+        phone: '0815111434',
+        password: hashPassword,
+        role: 'ADMIN',
+        avatarUrl:
+          'https://res.cloudinary.com/dbvlsf9bi/image/upload/v1759736844/BuAnCuopChibi_kpa9lb.png',
+        bio: 'Admin cua shop.',
+      },
     ],
   });
   console.log('⭐ Bắt đầu tạo review tự sinh...');

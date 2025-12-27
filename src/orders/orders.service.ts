@@ -6,7 +6,7 @@ export class OrdersService {
   constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return this.prisma.order.findMany({});
+    return await this.prisma.order.findMany({});
   }
 
   async findByMonth(month: number) {

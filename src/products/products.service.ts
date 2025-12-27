@@ -232,6 +232,20 @@ export class ProductsService {
     return (await products).map((p) => this.applyPromotion(p));
   }
 
+  async findByMonth() {
+    const currentYear = new Date().getFullYear();
+    const currMonth = new Date().getMonth() + 1;
+    const startDay = new Date(currentYear, currMonth - 1, 1 + 1);
+    const endDay = new Date(currentYear, currMonth, 1);
+
+    const data = this.prisma.product.findMany({
+      where: { createdAt: { gte: startDay, lt: endDay } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return data;
+  }
+
   // Lấy chi tiết 1 sản phẩm
   async findOne(id: string) {
     const product = await this.prisma.product.findUnique({

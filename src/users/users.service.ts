@@ -19,11 +19,23 @@ export class UserService {
   }
 
   async findAll(): Promise<User[]> {
-    return this.prisma.user.findMany({
+    return await this.prisma.user.findMany({
       include: {
         cart: true,
         orders: true,
       },
+    });
+  }
+
+  async findByMonth() {
+    const currentYear = new Date().getFullYear();
+    const currMonth = new Date().getMonth() + 1;
+    const startDay = new Date(currentYear, currMonth - 1, 1 + 1);
+    const endDay = new Date(currentYear, currMonth, 1);
+
+    return await this.prisma.user.findMany({
+      where: { createdAt: { gte: startDay, lt: endDay } },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
