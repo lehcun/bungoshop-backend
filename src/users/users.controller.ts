@@ -7,7 +7,6 @@ import {
   Body,
   Param,
   UseGuards,
-  UnauthorizedException,
   Req,
 } from '@nestjs/common';
 import { UserService } from './users.service';
@@ -40,12 +39,6 @@ export class UserController {
     };
   }
 
-  @Get('address')
-  @UseGuards(AuthGuard('jwt'))
-  async getAddress(@Req() req) {
-    return await this.userService.findAddressById(req.user.id);
-  }
-
   @Post()
   create(@Body() body: { name: string; email: string; password: string }) {
     return this.userService.create(body);
@@ -64,11 +57,25 @@ export class UserController {
     return this.userService.delete(id);
   }
 
+  //ADDRESS
+  @Get('address/default')
+  @UseGuards(AuthGuard('jwt'))
+  async getDefaultAddress(@Req() req) {
+    return await this.userService.findDefaultAddress(req.user.id);
+  }
+
+  @Get('address')
+  @UseGuards(AuthGuard('jwt'))
+  async getAddress(@Req() req) {
+    return await this.userService.findAllAddressById(req.user.id);
+  }
+
   @Post('address')
+  @UseGuards(AuthGuard('jwt'))
   async createAddress(
+    @Req() req,
     @Body()
     body: {
-      userId: string;
       recipient: string;
       city: string;
       line1: string;
@@ -76,7 +83,7 @@ export class UserController {
       label: string;
     },
   ) {
-    console.log('body: ', body);
-    return await this.userService.createAddress(body);
+    const newDto = { userId: req.user.id, ...body };
+    return await this.userService.createAddress(newDto);
   }
 }

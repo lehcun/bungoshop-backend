@@ -12,12 +12,6 @@ export class UserService {
     });
   }
 
-  async findAddressById(userId: string) {
-    return await this.prisma.address.findMany({
-      where: { id: userId },
-    });
-  }
-
   async findAll(): Promise<User[]> {
     return await this.prisma.user.findMany({
       include: {
@@ -65,6 +59,19 @@ export class UserService {
     return this.prisma.user.delete({ where: { id } });
   }
 
+  //ADDRESS
+  async findDefaultAddress(userId: string) {
+    return await this.prisma.address.findFirst({
+      where: { userId: userId, isDefault: true },
+    });
+  }
+
+  async findAllAddressById(userId: string) {
+    return await this.prisma.address.findMany({
+      where: { userId: userId },
+    });
+  }
+
   async createAddress(body: {
     userId: string;
     recipient: string;
@@ -83,7 +90,7 @@ export class UserService {
       label,
       country: 'Viet Nam',
     };
-    return this.prisma.address.create({
+    return await this.prisma.address.create({
       data,
     });
   }
