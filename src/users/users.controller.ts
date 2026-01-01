@@ -80,10 +80,36 @@ export class UserController {
       city: string;
       line1: string;
       phone: string;
-      label: string;
+      label?: string;
+      isDefault?: boolean;
     },
   ) {
-    const newDto = { userId: req.user.id, ...body };
+    const { isDefault } = body;
+    console.log('isDefault: ', isDefault);
+    console.log('isDefaultType: ', typeof isDefault);
+    const isDef = isDefault ? true : false;
+    const newDto = { userId: req.user.id, isDefault: isDef, ...body };
     return await this.userService.createAddress(newDto);
+  }
+
+  @Put('address/:id')
+  @UseGuards(AuthGuard('jwt'))
+  async updateAddress(
+    @Req() req,
+    @Body()
+    body: {
+      id: string;
+      recipient: string;
+      city: string;
+      line1: string;
+      phone: string;
+      label?: string;
+      isDefault?: boolean;
+    },
+  ) {
+    return await this.userService.updateAddress({
+      userId: req.user.id,
+      ...body,
+    });
   }
 }

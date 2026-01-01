@@ -79,8 +79,9 @@ export class UserService {
     line1: string;
     phone: string;
     label?: string;
+    isDefault?: boolean;
   }) {
-    const { userId, recipient, city, line1, phone, label } = body;
+    const { userId, recipient, city, line1, phone, label, isDefault } = body;
     const data = {
       userId,
       recipient,
@@ -88,10 +89,60 @@ export class UserService {
       city,
       line1,
       label,
+      isDefault,
       country: 'Viet Nam',
     };
+
+    if (isDefault) {
+      await this.prisma.address.updateMany({
+        where: { userId: userId, isDefault: true },
+        data: { isDefault: false },
+      });
+    } else {
+      const addresses = await this.prisma.address.findMany({
+        where: { userId: userId },
+      });
+
+      if (addresses.length === 0) {
+        data.isDefault = true;
+      }
+    }
+
     return await this.prisma.address.create({
       data,
+    });
+  }
+
+  async updateAddress(body: {
+    id: string;
+    userId: string;
+    recipient: string;
+    city: string;
+    line1: string;
+    phone: string;
+    label?: string;
+    isDefault?: boolean;
+  }) {
+    const { id, userId, recipient, city, line1, phone, label, isDefault } =
+      body;
+
+    if (isDefault) {
+      await this.prisma.address.updateMany({
+        where: { userId: userId, isDefault: true },
+        data: { isDefault: false },
+      });
+    }
+
+    await this.prisma.address.update({
+      where: { id },
+      data: {
+        recipient: recipient,
+        city: city,
+        line1: line1,
+        phone: phone,
+        label: label,
+        isDefault: isDefault,
+      },
     });
   }
 }
