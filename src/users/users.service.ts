@@ -69,6 +69,14 @@ export class UserService {
   async findAllAddressById(userId: string) {
     return await this.prisma.address.findMany({
       where: { userId: userId },
+      orderBy: [
+        {
+          isDefault: 'desc',
+        },
+        {
+          createdAt: 'asc',
+        },
+      ],
     });
   }
 

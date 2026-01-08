@@ -95,6 +95,7 @@ export class UserController {
   @Put('address/:id')
   @UseGuards(AuthGuard('jwt'))
   async updateAddress(
+    @Param() param,
     @Req() req,
     @Body()
     body: {
@@ -107,7 +108,9 @@ export class UserController {
       isDefault?: boolean;
     },
   ) {
+    const { id } = param;
     return await this.userService.updateAddress({
+      id,
       userId: req.user.id,
       ...body,
     });
