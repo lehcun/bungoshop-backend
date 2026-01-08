@@ -57,6 +57,7 @@ export class OrdersController {
     };
   }
 
+  //Phần này truy vấn quá nặng cần sửa lại trong tương lai
   @Get('/user/history')
   @UseGuards(AuthGuard('jwt'))
   async getHistory(@Req() req) {
@@ -66,7 +67,11 @@ export class OrdersController {
       include: {
         items: {
           include: {
-            product: true,
+            product: {
+              include: {
+                images: true,
+              },
+            },
             variant: true,
           },
         },
@@ -78,17 +83,26 @@ export class OrdersController {
       id: order.id,
       createdAt: order.createdAt,
       status: order.status,
-      total: order.totalPrice,
-      items: order.items.map((item) => ({
-        productName: item.product.name,
-        varient: {
-          size: item.variant.size,
-          color: item.variant.color,
-        },
-        price: item.unitPrice,
-        quantity: item.quantity,
-        // image: item.product.
-      })),
+      totalPrice: order.totalPrice,
+      items: order.items.map((item) => {
+        // Logic lấy ảnh:
+        // Ưu tiên 1: Ảnh của variant (ví dụ: ảnh màu đỏ)
+        // Ưu tiên 2: Ảnh đầu tiên trong mảng images của Product
+        // Ưu tiên 3: Placeholder nếu không có ảnh nào
+        const itemImage =
+          item.variant?.imageUrl ||
+          (item.product.images.length > 0 ? item.product.images[0].url : null);
+        return {
+          productName: item.product.name,
+          varient: {
+            size: item.variant.size,
+            color: item.variant.color,
+          },
+          price: item.unitPrice,
+          quantity: item.quantity,
+          imageUrl: itemImage,
+        };
+      }),
     }));
 
     return formattedOrders;
