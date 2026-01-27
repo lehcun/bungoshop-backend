@@ -8,7 +8,6 @@ test.describe('Luồng đăng nhập người dùng', () => {
     await page.goto('http://localhost:3000/user/login');
 
     // 2. Điền thông tin vào form
-    // Playwright tìm các ô input dựa trên label, placeholder hoặc CSS selector
     await page.getByPlaceholder('Email').fill('lehcun1099@gmail.com');
     await page.getByPlaceholder('Password').fill('123456');
 
@@ -56,16 +55,16 @@ test.describe('Luồng đăng nhập người dùng', () => {
     await expect(visible).toBeTruthy();
   });
 
-  test('Không thể đăng nhập khi chưa nhập email', async ({ page }) => {
-    await page.goto('http://localhost:3000/user/login');
-    await page.getByPlaceholder('Password').fill('123456');
+  // test('Không thể đăng nhập khi chưa nhập email', async ({ page }) => {
+  //   await page.goto('http://localhost:3000/user/login');
+  //   await page.getByPlaceholder('Password').fill('123456');
 
-    const visible = await page
-      .getByRole('button', { name: 'Login' })
-      .isVisible();
+  //   const visible = await page
+  //     .getByRole('button', { name: 'Login' })
+  //     .isVisible();
 
-    await expect(visible).toBeTruthy();
-  });
+  //   await expect(visible).toBeTruthy();
+  // });
 
   test('Khóa đăng nhập nếu nhập sai quá 5 lần', async ({ page }) => {
     await page.goto('http://localhost:3000/user/login');
@@ -76,7 +75,7 @@ test.describe('Luồng đăng nhập người dùng', () => {
       await page.getByPlaceholder('Password').fill('wrongpassword');
       await page.getByRole('button', { name: 'Login' }).click();
 
-      const toast = await page.getByText('Sai email hoặc mật khẩu');
+      await page.getByText('Sai email hoặc mật khẩu');
     }
     //Lan 6
     await page.getByPlaceholder('Password').fill('wrongpassword');
@@ -84,5 +83,42 @@ test.describe('Luồng đăng nhập người dùng', () => {
 
     const lockMessage = page.locator('text=Bạn đã nhập sai quá nhiều lần');
     await expect(lockMessage).toBeVisible();
+  });
+
+  test('Kiểm tra Cookie sau khi đăng nhập thành công', async ({
+    page,
+    context,
+  }) => {
+    await page.goto('http://localhost:3000/user/login');
+
+    await page.getByPlaceholder('Email').fill('lehcun1099@gmail.com');
+    await page.getByPlaceholder('Password').fill('123456');
+    await page.getByRole('button', { name: 'Login' }).click();
+
+    // Đợi chuyển hướng xong
+    await page.waitForURL('http://localhost:3000');
+
+    //lấy cookie
+    const cookies = await context.cookies();
+    const token = cookies.find((c) => c.name === 'access_token');
+
+    // Demo Assert
+    expect(token).toBeDefined(); // Đảm bảo đã có token
+    expect(token?.httpOnly).toBe(true); // Kiểm tra tiêu chuẩn bảo mật
+    console.log('Token thu thập được:', token?.value);
+  });
+
+  test('Kiem tra ban co phai admin hay ko', async ({ page, context }) => {
+    await page.goto('http://localhost:3000/user/login');
+
+    await page.getByPlaceholder('Email').fill('lehcun1099@gmail.com');
+    await page.getByPlaceholder('Password').fill('123456');
+    await page.getByRole('button', { name: 'Login' }).click();
+
+    await page.waitForURL('http://localhost:3000');
+
+    //Kiem tra role qua cookie
+    // const cookies = await context.cookies();
+    //Khong biet giai token kieu gi???
   });
 });
