@@ -42,10 +42,10 @@ enum PaymentStatus {
 }
 
 enum PaymentMethod {
-  CARD
-  WALLET
-  COD
-  TRANSFER
+  VNPay
+  MOMO
+  ATM
+  COD 
 }
 
 enum DiscountType {

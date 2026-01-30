@@ -1,18 +1,10 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { AuthGuard } from '@nestjs/passport';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 export interface CheckoutPayload {
-  paymentMethod: 'CARD' | 'WALLET' | 'COD' | 'TRANSFER';
+  paymentMethod: 'VNPay' | 'MOMO' | 'ATM' | 'COD';
   shippingAddressId: string;
 }
 

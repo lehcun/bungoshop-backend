@@ -1,11 +1,6 @@
-// import { defineConfig } from '@prisma/sdk';
+import 'dotenv/config';
+import { defineConfig } from 'prisma/config';
 
-// export default defineConfig({
-//   datasource: {
-//     url: process.env.DATABASE_URL,
-//   },
-//   migrations: {
-//     hoặc: 'ts-node ./prisma/seed.ts', // nếu dùng Node + ts-node
-//     // hoặc: 'node --loader ts-node/esm ./prisma/seed.ts' // nếu không cài ts-node
-//   },
-// });
+export default defineConfig({
+  schema: 'prisma/schema.prisma',
+});

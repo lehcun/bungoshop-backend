@@ -14,6 +14,7 @@ import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
 import { FavouriteModule } from './favourite/favourite.module';
 import { ProductModule } from './product/product.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { ProductModule } from './product/product.module';
     OrdersModule,
     FavouriteModule,
     ProductModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

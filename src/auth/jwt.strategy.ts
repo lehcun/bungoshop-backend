@@ -1,4 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -6,14 +7,17 @@ import { UserService } from 'src/users/users.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private userService: UserService) {
+  constructor(
+    private userService: UserService,
+    configService: ConfigService,
+  ) {
     super({
       //Thay từ đọc header sang etractors
       jwtFromRequest: ExtractJwt.fromExtractors([
         (req: Request) => req?.cookies?.access_token, // cấu hình thêm để lấy accesstoken từ cookie
       ]),
+      secretOrKey: configService.get<string>('JWT_SECRET'),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET,
     });
   }
 

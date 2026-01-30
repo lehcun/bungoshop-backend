@@ -24,7 +24,7 @@ export class OrdersService {
 
   async checkout(
     userId: string,
-    paymentMethod: 'CARD' | 'WALLET' | 'COD' | 'TRANSFER',
+    paymentMethod: 'VNPay' | 'MOMO' | 'ATM' | 'COD',
     shippingAddressId: string,
   ) {
     const cartItems = await this.prisma.cartItem.findMany({
