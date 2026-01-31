@@ -9,6 +9,10 @@ export class OrdersService {
     return await this.prisma.order.findMany({});
   }
 
+  async findOne(id: string) {
+    return await this.prisma.order.findUnique({ where: { id } });
+  }
+
   async findByMonth(month: number) {
     const currentYear = new Date().getFullYear();
     const startDay = new Date(currentYear, month - 1, 1 + 1);
