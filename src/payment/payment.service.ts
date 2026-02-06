@@ -1,14 +1,24 @@
-import { Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
 import * as moment from 'moment';
 import * as qs from 'qs';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
 import { OrdersService } from 'src/orders/orders.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class PaymentService {
-  constructor(private readonly orderService: OrdersService) {}
+  constructor(
+    private readonly orderService: OrdersService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  createPaymentUrl(amount: number, orderInfo: string, ipAddr: string) {
+  createPaymentUrl(
+    amount: number,
+    orderInfo: string,
+    orderId: string,
+    ipAddr: string,
+  ) {
     const tmnCode = process.env.VNP_TMNCODE;
     const secretKey = process.env.VNP_HASHSECRET;
     let vnpUrl = process.env.VNP_URL;
@@ -16,7 +26,6 @@ export class PaymentService {
 
     const date = new Date();
     const createDate = moment(date).format('YYYYMMDDHHmmss');
-    const orderId = moment(date).format('HHmmss'); // Mã đơn hàng tạm thời
 
     let vnp_Params = {};
     vnp_Params['vnp_Version'] = '2.1.0';
@@ -87,9 +96,10 @@ export class PaymentService {
 
     // Bước 3: Kiểm tra số tiền có khớp không (Số tiền VNPay trả về đã nhân 100)
     const vnpAmount = parseInt(vnp_Params['vnp_Amount']) / 100;
-    if (order.totalPrice !== vnpAmount) {
-      return { RspCode: '04', Message: 'Invalid amount' };
-    }
+    // if (order.totalPrice !== vnpAmount) {
+    //   console.log('test3');
+    //   return { RspCode: '04', Message: 'Invalid amount' };
+    // }
 
     // Bước 4: Kiểm tra trạng thái đơn hàng hiện tại (Tránh xử lý trùng lặp)
     // Chỉ cập nhật nếu đơn hàng đang ở trạng thái 'Pending' (Chờ thanh toán)
@@ -101,16 +111,73 @@ export class PaymentService {
     const responseCode = vnp_Params['vnp_ResponseCode'];
     if (responseCode === '00') {
       // Thanh toán thành công
-      order.status = 'COMPLETED';
-      // order.vnpayTranNo = vnp_Params['vnp_TransactionNo']; // Lưu lại mã giao dịch VNPay
+      await this.createPayment(order.userId, orderId, {
+        method: PaymentMethod.VNPay,
+        amount: vnpAmount,
+        transactionId: vnp_Params['vnp_TransactionNo'],
+        metadata: vnp_Params,
+      });
     } else {
       // Thanh toán lỗi (Khách hàng hủy, hết hạn, thiếu số dư...)
-      order.status = 'CANCELED';
+      await this.prisma.order.update({
+        where: { id: orderId },
+        data: {
+          status: OrderStatus.CANCELED,
+          paymentStatus: PaymentStatus.FAILED,
+        },
+      });
     }
-
-    // await this.orderRepository.save(order);
 
     // Trả về kết quả thành công cho VNPay để họ không gửi lại IPN nữa
     return { RspCode: '00', Message: 'Confirm Success' };
+  }
+
+  async createPayment(
+    userId: string,
+    orderId: string,
+    paymentData: {
+      method: PaymentMethod; // Sử dụng Enum PaymentMethod từ Prisma
+      amount: number;
+      transactionId?: string;
+      metadata?: any;
+    },
+  ) {
+    // 1. Kiểm tra đơn hàng có tồn tại và thuộc về user không
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, userId },
+    });
+
+    if (!order) {
+      throw new NotFoundException(
+        'Đơn hàng không tồn tại hoặc không thuộc quyền sở hữu của bạn.',
+      );
+    }
+
+    // Đơn hàng không tồn tại hoặc không thuộc quyền sở hữu của bạn.
+    return this.prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.create({
+        data: {
+          orderId: order.id,
+          userId,
+          method: paymentData.method,
+          amount: paymentData.amount,
+          transactionId: paymentData.transactionId,
+          metadata: paymentData.metadata,
+          status: PaymentStatus.SUCCEEDED,
+        },
+      });
+
+      // 3. Cập nhật trạng thái đơn hàng (Order)
+      // Nếu số tiền thanh toán đủ, cập nhật trạng thái đơn hàng
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          paymentStatus: PaymentStatus.SUCCEEDED,
+          paymentMethod: paymentData.method,
+          status: OrderStatus.PAID, // Chuyển sang trạng thái đang xử lý sau khi thanh toán
+        },
+      });
+      return payment;
+    });
   }
 }

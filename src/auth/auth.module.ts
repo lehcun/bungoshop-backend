@@ -12,7 +12,7 @@ import { ConfigModule } from '@nestjs/config';
     UsersModule,
     PassportModule,
     JwtModule.register({
-      secret: 'mysecretkey_!@98jkAHSDJH1289hasd',
+      secret: 'mysecretkey_!@98jkAHSDJH1289hasd', //risk
       signOptions: { expiresIn: '1d' },
     }),
   ],

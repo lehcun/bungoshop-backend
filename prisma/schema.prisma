@@ -339,11 +339,10 @@ model Payment {
   orderId       String?
   user          User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   userId        String?
-  provider      String // e.g., stripe, paypal
   method        PaymentMethod
   status        PaymentStatus @default(PENDING)
   amount        Int
-  currency      String        @default("USD")
+  currency      String        @default("VND")
   transactionId String?       @unique
   metadata      Json?
   createdAt     DateTime      @default(now())
