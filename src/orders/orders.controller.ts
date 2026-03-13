@@ -87,4 +87,10 @@ export class OrdersController {
       order,
     };
   }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('reOrder')
+  async reOrder(@Req() req, @Body('orderId') orderId: string) {
+    return await this.orderService.reOrder(req.user.id, orderId);
+  }
 }

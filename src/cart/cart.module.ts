@@ -7,5 +7,6 @@ import { ProductsModule } from 'src/products/products.module';
   imports: [ProductsModule],
   controllers: [CartController],
   providers: [CartService],
+  exports: [CartService],
 })
 export class CartModule {}

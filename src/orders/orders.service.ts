@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { OrderStatus, Prisma } from '@prisma/client';
+import { CartService } from 'src/cart/cart.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private cartService: CartService,
+    private prisma: PrismaService,
+  ) {}
 
   async findAll() {
     return await this.prisma.order.findMany({});
@@ -172,5 +176,49 @@ export class OrdersService {
     });
 
     return order;
+  }
+
+  async reOrder(userId: string, orderId: string) {
+    // 1. Lấy thông tin đơn hàng cũ cùng các items
+    const oldOrder = await this.prisma.order.findUnique({
+      where: { id: orderId, userId },
+      include: {
+        items: {
+          include: { variant: true, product: true },
+        },
+      },
+    });
+
+    if (!oldOrder) throw new Error('Không tìm thấy đơn hàng');
+
+    const validItems = [];
+
+    // 2. Kiểm tra từng item xem có thể mua lại không
+    for (const item of oldOrder.items) {
+      // Kiểm tra sản phẩm còn active và còn hàng không
+      if (item.variant.stock >= item.quantity) {
+        validItems.push({
+          productId: item.productId,
+          variantId: item.variantId,
+          quantity: item.quantity,
+        });
+      }
+    }
+
+    // 3. Cập nhật vào giỏ hàng (Cart)
+    // Giả sử bạn có CartService, hãy gọi hàm addToCart cho từng item hợp lệ
+    for (const validItem of validItems) {
+      await this.cartService.addCartItem(
+        userId,
+        validItem.productId,
+        validItem.variantId,
+        validItem.quantity,
+      );
+    }
+
+    return {
+      message: `Đã thêm ${validItems.length}/${oldOrder.items.length} sản phẩm vào giỏ hàng`,
+      addedCount: validItems.length,
+    };
   }
 }
