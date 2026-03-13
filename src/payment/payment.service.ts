@@ -95,11 +95,11 @@ export class PaymentService {
     }
 
     // Bước 3: Kiểm tra số tiền có khớp không (Số tiền VNPay trả về đã nhân 100)
-    const vnpAmount = parseInt(vnp_Params['vnp_Amount']) / 100;
-    // if (order.totalPrice !== vnpAmount) {
-    //   console.log('test3');
-    //   return { RspCode: '04', Message: 'Invalid amount' };
-    // }
+    const vnpAmount =
+      parseInt(vnp_Params['vnp_Amount']) / 100 + order.shippingFeePrice;
+    if (order.totalPrice !== vnpAmount) {
+      return { RspCode: '04', Message: 'Invalid amount' };
+    }
 
     // Bước 4: Kiểm tra trạng thái đơn hàng hiện tại (Tránh xử lý trùng lặp)
     // Chỉ cập nhật nếu đơn hàng đang ở trạng thái 'Pending' (Chờ thanh toán)
@@ -126,6 +126,18 @@ export class PaymentService {
           paymentStatus: PaymentStatus.FAILED,
         },
       });
+
+      const { items } = await this.orderService.findOneIncludeItem(orderId);
+      for (const item of items) {
+        await this.prisma.productVariant.update({
+          where: { id: item.variantId },
+          data: {
+            stock: {
+              increment: item.quantity,
+            },
+          },
+        });
+      }
     }
 
     // Trả về kết quả thành công cho VNPay để họ không gửi lại IPN nữa

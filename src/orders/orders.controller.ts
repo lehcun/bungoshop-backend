@@ -1,7 +1,16 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { AuthGuard } from '@nestjs/passport';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { OrderStatus } from '@prisma/client';
 
 export interface CheckoutPayload {
   paymentMethod: 'VNPay' | 'MOMO' | 'ATM' | 'COD';
@@ -16,10 +25,11 @@ export class OrdersController {
   ) {}
 
   @Get()
-  async getAll() {
+  async getOrders() {
     return await this.orderService.findAll();
   }
 
+  //Sửa lại toàn bộ hàm này
   @Get('/month')
   async getLastMonth() {
     const currMonth = new Date().getMonth() + 1;
@@ -49,55 +59,16 @@ export class OrdersController {
     };
   }
 
-  //Phần này truy vấn quá nặng cần sửa lại trong tương lai
   @Get('/user/history')
   @UseGuards(AuthGuard('jwt'))
-  async getHistory(@Req() req) {
-    const orders = await this.prisma.order.findMany({
-      where: { userId: req.user.id },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        items: {
-          include: {
-            product: {
-              include: {
-                images: true,
-              },
-            },
-            variant: true,
-          },
-        },
-      },
-    });
-
-    // Map dữ liệu về đúng format response
-    const formattedOrders = orders.map((order) => ({
-      id: order.id,
-      createdAt: order.createdAt,
-      status: order.status,
-      totalPrice: order.totalPrice,
-      items: order.items.map((item) => {
-        // Logic lấy ảnh:
-        // Ưu tiên 1: Ảnh của variant (ví dụ: ảnh màu đỏ)
-        // Ưu tiên 2: Ảnh đầu tiên trong mảng images của Product
-        // Ưu tiên 3: Placeholder nếu không có ảnh nào
-        const itemImage =
-          item.variant?.imageUrl ||
-          (item.product.images.length > 0 ? item.product.images[0].url : null);
-        return {
-          productName: item.product.name,
-          varient: {
-            size: item.variant.size,
-            color: item.variant.color,
-          },
-          price: item.unitPrice,
-          quantity: item.quantity,
-          imageUrl: itemImage,
-        };
-      }),
-    }));
-
-    return formattedOrders;
+  async getHistory(
+    @Req() req,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    if (status && status !== 'all')
+      status = status.toUpperCase() as OrderStatus;
+    return await this.orderService.getUserHistory(req.user.id, status, search);
   }
 
   @UseGuards(AuthGuard('jwt'))

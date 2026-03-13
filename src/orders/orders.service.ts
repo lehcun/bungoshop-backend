@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { OrderStatus, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -13,6 +14,13 @@ export class OrdersService {
     return await this.prisma.order.findUnique({ where: { id } });
   }
 
+  async findOneIncludeItem(id: string) {
+    return await this.prisma.order.findUnique({
+      where: { id },
+      include: { items: true },
+    });
+  }
+
   async findByMonth(month: number) {
     const currentYear = new Date().getFullYear();
     const startDay = new Date(currentYear, month - 1, 1 + 1);
@@ -24,6 +32,76 @@ export class OrdersService {
     });
 
     return data;
+  }
+
+  async getUserHistory(userId: string, status?: string, search?: string) {
+    // 1. Build điều kiện truy vấn (Dynamic Where)
+    let whereClause: Prisma.OrderWhereInput = {
+      userId: userId,
+    };
+
+    if (status && status != 'all') {
+      whereClause.status = status as OrderStatus;
+    }
+
+    if (search) {
+      whereClause = {
+        ...whereClause,
+        items: {
+          some: {
+            product: {
+              name: {
+                contains: search,
+              },
+            },
+          },
+        },
+      };
+    }
+
+    const orders = await this.prisma.order.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        items: {
+          include: {
+            product: {
+              include: {
+                images: true,
+              },
+            },
+            variant: true,
+          },
+        },
+      },
+    });
+
+    // 3. Xử lý logic map dữ liệu (Format Response)
+    return orders.map((order) => ({
+      id: order.id,
+      createdAt: order.createdAt,
+      status: order.status,
+      totalPrice: order.totalPrice,
+      items: order.items.map((item) => {
+        // Logic lấy ảnh:
+        // Ưu tiên 1: Ảnh của variant (ví dụ: ảnh màu đỏ)
+        // Ưu tiên 2: Ảnh đầu tiên trong mảng images của Product
+        // Ưu tiên 3: Placeholder nếu không có ảnh nào
+        const itemImage =
+          item.variant?.imageUrl ||
+          (item.product.images.length > 0 ? item.product.images[0].url : null);
+        return {
+          productName: item.product.name,
+          varient: {
+            size: item.variant.size,
+            color: item.variant.color,
+          },
+          price: item.unitPrice,
+          quantity: item.quantity,
+          imageUrl: itemImage,
+        };
+      }),
+    }));
   }
 
   async checkout(
