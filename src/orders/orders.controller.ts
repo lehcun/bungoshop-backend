@@ -15,6 +15,7 @@ import { OrderStatus } from '@prisma/client';
 export interface CheckoutPayload {
   paymentMethod: 'VNPay' | 'MOMO' | 'ATM' | 'COD';
   shippingAddressId: string;
+  cartItemIds: string[];
 }
 
 @Controller('orders')
@@ -80,6 +81,7 @@ export class OrdersController {
       userId,
       payload.paymentMethod,
       payload.shippingAddressId,
+      payload.cartItemIds,
     );
 
     return {

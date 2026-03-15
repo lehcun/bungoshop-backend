@@ -112,9 +112,15 @@ export class OrdersService {
     userId: string,
     paymentMethod: 'VNPay' | 'MOMO' | 'ATM' | 'COD',
     shippingAddressId: string,
+    cartItemIds: string[],
   ) {
     const cartItems = await this.prisma.cartItem.findMany({
-      where: { userId },
+      where: {
+        userId,
+        id: {
+          in: cartItemIds,
+        },
+      },
       include: { product: true, variant: true },
     });
 
@@ -172,7 +178,7 @@ export class OrdersService {
     });
 
     await this.prisma.cartItem.deleteMany({
-      where: { userId },
+      where: { userId, id: { in: cartItemIds } },
     });
 
     return order;

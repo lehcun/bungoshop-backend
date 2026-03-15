@@ -11,15 +11,10 @@ export class PaymentController {
   ) {}
 
   @Post('create')
-  async createPayment(
-    @Req() req: Request,
-    @Body() body: { amount: number; info: string; orderId: string },
-  ) {
+  async createPayment(@Req() req: Request, @Body() body: { orderId: string }) {
     //Tạo url chuyển sang webhook vnpay (sandbox)
     const ipAddr = req.ip || '127.0.0.1';
-    const url = this.paymentService.createPaymentUrl(
-      body.amount,
-      body.info,
+    const url = await this.paymentService.createPaymentUrl(
       body.orderId,
       ipAddr,
     );

@@ -13,14 +13,25 @@ export class PaymentService {
     private readonly prisma: PrismaService,
   ) {}
 
-  createPaymentUrl(
-    amount: number,
-    orderInfo: string,
-    orderId: string,
-    ipAddr: string,
-  ) {
-    const tmnCode = process.env.VNP_TMNCODE;
-    const secretKey = process.env.VNP_HASHSECRET;
+  async createPaymentUrl(orderId: string, ipAddr: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+    console.log('order:', order);
+
+    if (!order) {
+      throw new NotFoundException('Đơn hàng không tồn tại');
+    }
+
+    const amount = order.totalPrice;
+    const orderInfo = `Thanh toan dong ${orderId}`;
+
+    // const tmnCode = process.env.VNP_TMNCODE;
+    // const secretKey = process.env.VNP_HASHSECRET;
+
+    //Code và key dành riêng cho tester
+    const tmnCode = 'CGXZLS0Z';
+    const secretKey = 'XNBCJFAKAZQSGTARRLGCHVZWCIOIGSHN';
     let vnpUrl = process.env.VNP_URL;
     const returnUrl = process.env.VNP_RETURNURL;
 
@@ -165,7 +176,6 @@ export class PaymentService {
       );
     }
 
-    // Đơn hàng không tồn tại hoặc không thuộc quyền sở hữu của bạn.
     return this.prisma.$transaction(async (tx) => {
       const payment = await tx.payment.create({
         data: {
