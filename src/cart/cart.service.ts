@@ -124,4 +124,87 @@ export class CartService {
       message: 'Đã update sản phẩm trong giỏ hàng',
     };
   }
+
+  async updateVariant(
+    userId: string,
+    cartItemId: string,
+    newVariantId: string,
+  ) {
+    if (!userId || !cartItemId || !newVariantId) {
+      throw new Error('Thiếu thông tin user hoặc cart item');
+    }
+
+    // 1. Lấy CartItem hiện tại ra (Kèm theo Product để đề phòng Variant không set giá)
+    const currentCartItem = await this.prisma.cartItem.findUnique({
+      where: { id: cartItemId },
+      include: { product: true },
+    });
+
+    if (!currentCartItem || currentCartItem.userId !== userId) {
+      throw new Error('Không tìm thấy giỏ hàng hoặc không có quyền truy cập');
+    }
+
+    if (currentCartItem.variantId === newVariantId) {
+      return currentCartItem;
+    }
+
+    // 2. Lấy Variant mới lên
+    const newVariant = await this.prisma.productVariant.findUnique({
+      where: { id: newVariantId },
+    });
+
+    // 3. Xử lý giá (Fallback: Nếu variant không có giá riêng thì lấy giá gốc của Product)
+    const finalPrice =
+      newVariant.price !== null
+        ? newVariant.price
+        : currentCartItem.product.price;
+
+    if (!newVariant) {
+      throw new Error('Không tìm thấy phân loại sản phẩm');
+    }
+
+    // 4. Kiểm tra xem User đã có Variant này trong giỏ hàng chưa (tránh lỗi Unique)
+    const existingCartItemWithNewVariant =
+      await this.prisma.cartItem.findUnique({
+        where: {
+          userId_productId_variantId: {
+            userId,
+            productId: currentCartItem.productId,
+            variantId: newVariantId,
+          },
+        },
+      });
+
+    if (existingCartItemWithNewVariant) {
+      return await this.prisma.$transaction(async (tx) => {
+        const newQuantity =
+          existingCartItemWithNewVariant.quantity + currentCartItem.quantity;
+
+        // Cập nhật lại số lượng và tổng tiền cho item đã tồn tại
+        const updatedItem = await tx.cartItem.update({
+          where: { id: existingCartItemWithNewVariant.id },
+          data: {
+            quantity: newQuantity,
+            totalPrice: newQuantity * finalPrice,
+          },
+        });
+
+        // Xóa dòng giỏ hàng cũ đi
+        await tx.cartItem.delete({
+          where: { id: currentCartItem.id },
+        });
+
+        return updatedItem;
+      });
+    }
+
+    return await this.prisma.cartItem.update({
+      where: { id: cartItemId },
+      data: {
+        variantId: newVariantId,
+        priceAtAdd: finalPrice,
+        totalPrice: finalPrice * currentCartItem.quantity,
+      },
+    });
+  }
 }

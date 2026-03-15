@@ -286,4 +286,10 @@ export class ProductsService {
       take: 8,
     });
   }
+
+  async findVariants(productId: string) {
+    return await this.prisma.productVariant.findMany({
+      where: { productId },
+    });
+  }
 }

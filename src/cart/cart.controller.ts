@@ -26,6 +26,10 @@ export interface CartUpdatePayload {
   id: string;
   quantityChange: number;
 }
+export interface UpdateCartVariantPayload {
+  cartItemId: string;
+  newVariantId: string;
+}
 
 @Controller('cart')
 export class CartController {
@@ -56,6 +60,23 @@ export class CartController {
     const userId = req.user.id;
     console.log(userId);
     return await this.cartService.removeCartItem(userId, payload.id);
+  }
+
+  @Patch('update-variant')
+  @UseGuards(AuthGuard('jwt'))
+  async updateCartVariant(
+    @Req() req,
+    @Body() payload: UpdateCartVariantPayload,
+  ) {
+    console.log(payload);
+    const userId = req.user.id;
+    const { cartItemId, newVariantId } = payload;
+
+    return await this.cartService.updateVariant(
+      userId,
+      cartItemId,
+      newVariantId,
+    );
   }
 
   @Patch(':id')

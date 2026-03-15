@@ -75,4 +75,9 @@ export class ProductsController {
   async getOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
   }
+
+  @Get(':id/variants')
+  async getVariants(@Param('id') id: string) {
+    return this.productsService.findVariants(id);
+  }
 }
