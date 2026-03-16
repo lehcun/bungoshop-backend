@@ -9,7 +9,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'http://89.167.124.206:3000',
-      'http://bungoshop.io.vn',
+      'http://bungoshop.io.vn:3000',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
