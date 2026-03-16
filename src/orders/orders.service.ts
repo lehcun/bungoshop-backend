@@ -95,6 +95,8 @@ export class OrdersService {
           item.variant?.imageUrl ||
           (item.product.images.length > 0 ? item.product.images[0].url : null);
         return {
+          productId: item.productId,
+          variantId: item.variantId,
           productName: item.product.name,
           varient: {
             size: item.variant.size,
