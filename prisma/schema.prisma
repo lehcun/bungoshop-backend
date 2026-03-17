@@ -20,6 +20,7 @@ enum Role {
 }
 
 enum AccountStatus {
+  UNVERIFIED
   ACTIVE
   SUSPENDED
   DELETED
@@ -61,7 +62,7 @@ model User {
   phone     String?   @unique
   password  String // <-- Hash ở application layer (bcrypt/argon2)
   role      Role      @default(CUSTOMER)
-  status    AccountStatus      @default(ACTIVE)
+  status    AccountStatus      @default(UNVERIFIED)
   avatarUrl String?
   bio       String?
   createdAt DateTime  @default(now())
@@ -349,10 +350,10 @@ model Payment {
   updatedAt     DateTime      @default(now()) @updatedAt
 }
 
-// OrderItem.discountPrice → giảm giá từng sản phẩm (theo variant, flash sale, v.v.)
-// Order.discountPrice → giảm giá toàn đơn (voucher, khuyến mãi mã code)
-// totalPrice của đơn = (subtotalPrice - itemDiscount - orderDiscount) + shippingFeePrice
-//itemDiscount = ∑ item.discountCents * item.quantity
-//orderDiscount = voucherDiscountCents
-//totalDiscount = itemDiscount + orderDiscount
-//total = subtotal + shippingFee - totalDiscount
+model Otp {
+  id        String   @id @default(cuid())   
+  email     String   @unique 
+  code      String   
+  expiresAt DateTime 
+  createdAt DateTime @default(now())
+}

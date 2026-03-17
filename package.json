@@ -20,8 +20,9 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^10.0.0",
-    "@nestjs/config": "^4.0.2",
+    "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^10.0.0",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/mapped-types": "*",
@@ -34,6 +35,7 @@
     "cookie-parser": "^1.4.7",
     "crypto-js": "^4.2.0",
     "moment": "^2.30.1",
+    "nodemailer": "^8.0.2",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
@@ -51,6 +53,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.2",
     "@types/node": "^20.19.19",
+    "@types/nodemailer": "^7.0.11",
     "@types/passport-local": "^1.0.38",
     "@types/qs": "^6.14.0",
     "@types/supertest": "^6.0.0",

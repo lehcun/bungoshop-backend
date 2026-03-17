@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Res,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
 import { LoginDto } from './dto/login.dto';
@@ -80,28 +73,37 @@ export class AuthController {
   }
 
   @Post('register')
-  async signup(
-    @Body()
-    dto: SignUpDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const signUpResult = await this.authService.signUp(
+  async signup(@Body() dto: SignUpDto) {
+    const result = await this.authService.signUp(
       dto.name,
       dto.email,
       dto.password,
     );
-    const token = signUpResult.access_token;
-    const user = signUpResult.user;
 
+    return result;
+  }
+
+  @Post('verify-register')
+  async verifyRegister(
+    @Body('email') email: string,
+    @Body('code') code: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const verifyResult = await this.authService.verifySignUp(email, code);
+
+    const token = verifyResult.access_token;
+    const user = verifyResult.user;
+
+    // Lúc này tài khoản đã ACTIVE, có token, ta mới tiến hành set Cookie
     const isProd = process.env.NODE_ENV === 'production';
     res.cookie('access_token', token, {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? 'none' : 'strict',
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      maxAge: 1000 * 60 * 60 * 24, // 1 ngày
       path: '/',
     });
 
-    return { user, message: 'Dang ky thanh cong' };
+    return { user, message: 'Xác thực và đăng nhập thành công' };
   }
 }
