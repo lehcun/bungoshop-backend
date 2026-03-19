@@ -16,6 +16,8 @@ import { FavouriteModule } from './favourite/favourite.module';
 import { ProductModule } from './product/product.module';
 import { PaymentModule } from './payment/payment.module';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-yet';
 
 @Module({
   imports: [
@@ -36,6 +38,19 @@ import { MailerModule } from '@nestjs-modules/mailer';
         defaults: {
           from: configService.get<string>('MAIL_FROM'),
         },
+      }),
+    }),
+
+    // Khởi tạo kết nối Redis
+    CacheModule.registerAsync({
+      isGlobal: true, // Để dùng ở mọi module mà không cần import lại
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        store: redisStore,
+        host: configService.get<string>('REDIS_HOST'),
+        port: configService.get<number>('REDIS_PORT'),
+        ttl: 600000, // Thời gian sống mặc định của cache: 10 phút (tính bằng mili-giây)
       }),
     }),
 

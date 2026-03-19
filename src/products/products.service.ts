@@ -1,9 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {}
 
   // ===== Utility function =====
   private applyPromotion(product: any) {
@@ -218,9 +223,22 @@ export class ProductsService {
     return (await products).map((p) => this.applyPromotion(p));
   }
 
-  // Lấy toàn bộ sản phẩm
-  async findAll() {
-    const products = this.prisma.product.findMany({
+  async getAllProducts() {
+    // 1. Định nghĩa cái "Chìa khóa" (Key) để tìm trong Redis
+    const cacheKey = 'ALL_PRODUCTS';
+
+    // 2. Hỏi Redis xem có dữ liệu chưa?
+    const cachedProducts = await this.cacheManager.get(cacheKey);
+
+    // Nếu có (Cache Hit) -> Trả về luôn, không cần đụng Database!
+    if (cachedProducts) {
+      console.log('⚡ Lấy data từ Redis siêu tốc!');
+      return cachedProducts;
+    }
+
+    // 3. Nếu không có (Cache Miss) -> Query vào Postgres bằng Prisma
+    console.log('🐢 Lấy data từ Database (chậm hơn)');
+    const products = await this.prisma.product.findMany({
       include: {
         PromotionOnProduct: {
           include: {
@@ -229,7 +247,23 @@ export class ProductsService {
         },
       },
     });
+
+    // 4. Lưu kết quả vừa tìm được vào Redis để lần sau dùng
+    // (Tham số cuối là TTL: tính bằng mili-giây. Ở đây tôi set 5 phút)
+    await this.cacheManager.set(cacheKey, products, 5 * 60 * 1000);
+
     return (await products).map((p) => this.applyPromotion(p));
+
+    // const products = this.prisma.product.findMany({
+    //   include: {
+    //     PromotionOnProduct: {
+    //       include: {
+    //         promotion: true,
+    //       },
+    //     },
+    //   },
+    // });
+    // return (await products).map((p) => this.applyPromotion(p));
   }
 
   async findByMonth() {
@@ -248,25 +282,37 @@ export class ProductsService {
 
   // Lấy chi tiết 1 sản phẩm
   async findOne(id: string) {
+    const cacheKey = `PRODUCT_DETAIL_${id}`;
+
+    // Check cache
+    const cachedProduct = await this.cacheManager.get(cacheKey);
+    if (cachedProduct) {
+      console.log(`⚡ Lấy chi tiết sản phẩm ${id} từ Redis!`);
+      return cachedProduct;
+    }
+
+    console.log(`🐢 Lấy chi tiết sản phẩm ${id} từ Database...`);
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: {
-        // category: true,
-        // brand: true,
         images: true,
         variants: true,
         reviews: true,
         PromotionOnProduct: {
-          include: {
-            promotion: true,
-          },
+          include: { promotion: true },
         },
       },
     });
-    if (!product) return null;
-    return this.applyPromotion(product);
-  }
 
+    if (!product) return null;
+
+    const result = this.applyPromotion(product);
+
+    // Chi tiết sản phẩm ít thay đổi -> lưu cache 15 phút
+    await this.cacheManager.set(cacheKey, result, 900000);
+
+    return result;
+  }
   //Lấy sản phẩm theo searchParams
   async findBySearchParam(query: string) {
     if (!query) return [];

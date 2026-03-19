@@ -57,7 +57,7 @@ export class ProductsController {
 
   @Get('/all')
   async getAll() {
-    return await this.productsService.findAll();
+    return await this.productsService.getAllProducts();
   }
 
   //Hàm này lấy tháng hiện tại
