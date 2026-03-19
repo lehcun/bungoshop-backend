@@ -1,6 +1,8 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
@@ -17,6 +19,37 @@ export class AuthService {
     private usersService: UserService,
     private mailerService: MailerService,
   ) {}
+
+  // Sinh mã OTP, lưu vào DB và trả về mã đó
+
+  private async generateAndSaveOtp(email: string): Promise<string> {
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+
+    await this.prisma.otp.upsert({
+      where: { email },
+      update: { code: otpCode, expiresAt },
+      create: { email, code: otpCode, expiresAt },
+    });
+
+    return otpCode;
+  }
+
+  private async generateAuthResponse(user: any) {
+    const payload = {
+      username: user.name,
+      phone: user.phone,
+      email: user.email,
+      sub: user.id,
+      role: user.role,
+    };
+
+    const token = await this.jwtService.signAsync(payload);
+    const { password, ...userWithoutPass } = user;
+
+    return { access_token: token, user: userWithoutPass };
+  }
 
   async signIn(email: string, password: string): Promise<any> {
     const user = await this.usersService.findOneByEmail(email);
@@ -99,18 +132,8 @@ export class AuthService {
       },
     });
 
-    // Tạo và lưu mã OTP
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+    const otpCode = await this.generateAndSaveOtp(lowerCaseEmail);
 
-    await this.prisma.otp.upsert({
-      where: { email: lowerCaseEmail },
-      update: { code: otpCode, expiresAt },
-      create: { email: lowerCaseEmail, code: otpCode, expiresAt },
-    });
-
-    // Gửi mail
     await this.mailerService.sendMail({
       to: lowerCaseEmail,
       subject: 'Mã xác nhận đăng ký tài khoản',
@@ -143,16 +166,117 @@ export class AuthService {
 
     await this.prisma.otp.delete({ where: { email: lowerCaseEmail } });
 
-    // Cấp Token
-    const payload = { username: user.name, email: user.email, sub: user.id };
-    const access_token = await this.jwtService.signAsync(payload);
-
-    const { password: pw, ...userWithoutPass } = user;
-
     return {
       message: 'Xác nhận email thành công!',
-      access_token,
-      user: userWithoutPass,
+      ...(await this.generateAuthResponse(user)),
+    };
+  }
+
+  async resendOtp(email: string) {
+    const lowerCaseEmail = email.toLocaleLowerCase();
+
+    // 1. Kiểm tra xem email này có thực sự đang trong trạng thái chờ xác thực không
+    const user = await this.prisma.user.findUnique({
+      where: { email: lowerCaseEmail },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Tài khoản không tồn tại.');
+    }
+
+    if (user.status === 'ACTIVE') {
+      throw new BadRequestException('Tài khoản này đã được xác thực.');
+    }
+
+    // 2. Tạo mã mới và cập nhật thời gian hết hạn
+    const otpCode = await this.generateAndSaveOtp(lowerCaseEmail);
+
+    // 3. Gửi lại mail
+    await this.mailerService.sendMail({
+      to: lowerCaseEmail,
+      subject: 'Mã xác nhận đăng ký tài khoản (Gửi lại)',
+      text: `Chào bạn, mã xác nhận đăng ký tài khoản của bạn là: ${otpCode}. Mã có hiệu lực trong 5 phút.`,
+    });
+
+    return { message: 'Mã xác nhận mới đã được gửi đến email của bạn.' };
+  }
+
+  // Quên mật khẩu - Hàm gửi reset otp
+  async sendPasswordResetOtp(email: string) {
+    const lowerCaseEmail = email.toLocaleLowerCase();
+
+    const user = await this.prisma.user.findUnique({
+      where: { email: lowerCaseEmail },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy tài khoản với email này.');
+    }
+
+    if (user.status !== 'ACTIVE') {
+      throw new BadRequestException(
+        'Tài khoản này chưa được xác thực hoặc đã bị khóa.',
+      );
+    }
+
+    const otpCode = await this.generateAndSaveOtp(lowerCaseEmail);
+
+    await this.mailerService.sendMail({
+      to: lowerCaseEmail,
+      subject: 'Mã OTP đặt lại mật khẩu',
+      text: `Chào ${user.name},\n\nMã OTP để đặt lại mật khẩu của bạn là: ${otpCode}.\nMã này có hiệu lực trong 5 phút.\nNếu bạn không yêu cầu đổi mật khẩu, vui lòng bỏ qua email này.`,
+    });
+
+    return {
+      message: 'Mã OTP đặt lại mật khẩu đã được gửi đến email của bạn.',
+    };
+  }
+
+  //Quên mật khẩu - Xác nhận OTP và cập nhật mật khẩu mới
+  async resetPassword(email: string, code: string, newPassword: string) {
+    const lowerCaseEmail = email.toLocaleLowerCase();
+
+    const otpRecord = await this.prisma.otp.findUnique({
+      where: { email: lowerCaseEmail },
+    });
+
+    // Kiểm tra mã OTP có tồn tại và khớp không
+    if (!otpRecord || otpRecord.code !== code) {
+      throw new UnauthorizedException('Mã xác nhận không chính xác.');
+    }
+
+    // Kiểm tra mã OTP đã hết hạn chưa
+    if (new Date() > otpRecord.expiresAt) {
+      throw new UnauthorizedException(
+        'Mã xác nhận đã hết hạn. Vui lòng yêu cầu mã mới.',
+      );
+    }
+
+    // Kiểm tra User có tồn tại và đang ACTIVE không
+    const user = await this.prisma.user.findUnique({
+      where: { email: lowerCaseEmail },
+    });
+
+    if (!user || user.status !== 'ACTIVE') {
+      throw new BadRequestException('Tài khoản không hợp lệ hoặc đã bị khóa.');
+    }
+
+    const hashPassword = await bcrypt.hash(newPassword, 10);
+
+    // Cập nhật mật khẩu mới
+    await this.prisma.user.update({
+      where: { email: lowerCaseEmail },
+      data: { password: hashPassword },
+    });
+
+    // Xóa mã OTP để không bị sử dụng lại (Bảo mật Replay Attack)
+    await this.prisma.otp.delete({
+      where: { email: lowerCaseEmail },
+    });
+
+    return {
+      message:
+        'Đổi mật khẩu thành công. Bạn có thể đăng nhập bằng mật khẩu mới.',
     };
   }
 }

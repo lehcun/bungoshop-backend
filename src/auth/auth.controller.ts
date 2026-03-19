@@ -74,6 +74,8 @@ export class AuthController {
 
   @Post('register')
   async signup(@Body() dto: SignUpDto) {
+    // Kết hợp file ResetPasswordDto kết hợp class-validator để check độ dài password >= 6 ký tự và mail chuẩn ngay tại Controller.
+    // Làm sau
     const result = await this.authService.signUp(
       dto.name,
       dto.email,
@@ -105,5 +107,26 @@ export class AuthController {
     });
 
     return { user, message: 'Xác thực và đăng nhập thành công' };
+  }
+
+  @Post('resend-otp')
+  async resendOtp(@Body('email') email: string) {
+    return await this.authService.resendOtp(email);
+  }
+
+  @Post('forgot-password/send-otp')
+  async sendPasswordResetOtp(@Body('email') email: string) {
+    return await this.authService.sendPasswordResetOtp(email);
+  }
+
+  @Post('reset-password')
+  async resetPassword(
+    @Body('email') email: string,
+    @Body('code') code: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    // Kết hợp file ResetPasswordDto kết hợp class-validator để check độ dài newPassword >= 6 ký tự ngay tại Controller.
+    // Làm sau
+    return await this.authService.resetPassword(email, code, newPassword);
   }
 }
