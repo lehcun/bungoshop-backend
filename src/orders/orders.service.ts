@@ -18,13 +18,6 @@ export class OrdersService {
     return await this.prisma.order.findUnique({ where: { id } });
   }
 
-  async findOneIncludeItem(id: string) {
-    return await this.prisma.order.findUnique({
-      where: { id },
-      include: { items: true },
-    });
-  }
-
   async findByMonth(month: number) {
     const currentYear = new Date().getFullYear();
     const startDay = new Date(currentYear, month - 1, 1 + 1);
@@ -63,6 +56,7 @@ export class OrdersService {
       };
     }
 
+    // 2. Tìm đơn hàng theo điều kiện
     const orders = await this.prisma.order.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' },

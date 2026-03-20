@@ -19,6 +19,7 @@ test.describe('Kiểm tra luông thanh toán của người dùng', () => {
     await page.getByRole('button', { name: 'L', exact: true }).click();
     await page.getByRole('button', { name: '🛒 Thêm vào giỏ hàng' }).click();
     await page.goto('http://localhost:3000/cart');
+    await page.getByRole('checkbox').nth(1).check();
     await page.getByRole('button', { name: 'VNPay' }).click();
     await page.getByText('💳 Thanh toán').click();
     await page.getByText('Thẻ nội địa và tài khoản ngân').click();
