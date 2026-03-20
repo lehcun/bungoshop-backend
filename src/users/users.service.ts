@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { User } from '@prisma/client';
+import { Gender, User } from '@prisma/client';
 
 @Injectable()
 export class UserService {
@@ -57,6 +57,24 @@ export class UserService {
 
   async delete(id: string): Promise<User> {
     return this.prisma.user.delete({ where: { id } });
+  }
+
+  async updateUserInfo(
+    userId: string,
+    name: string,
+    gender: Gender,
+    dob: string,
+  ) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        name,
+        gender,
+        dob: dob ? new Date(dob) : null, // Ép kiểu chuỗi "2005-01-05" về Date object cho Prisma
+      },
+    });
+
+    return { message: 'Cập nhật thông tin cá nhân thành công' };
   }
 
   //ADDRESS

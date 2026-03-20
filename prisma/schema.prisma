@@ -54,6 +54,12 @@ enum DiscountType {
   AMOUNT
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
 /// ---------- Models ----------
 model User {
   id        String    @id @default(cuid())
@@ -65,6 +71,8 @@ model User {
   status    AccountStatus      @default(UNVERIFIED)
   avatarUrl String?
   bio       String?
+  dob       DateTime? @db.Date  // Ngày sinh (chỉ lưu Ngày/Tháng/Năm)
+  gender    Gender?             // Giới tính (Nên dùng Enum)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @default(now()) @updatedAt
   deletedAt DateTime?

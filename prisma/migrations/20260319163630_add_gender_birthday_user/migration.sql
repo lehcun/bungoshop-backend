@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `User` ADD COLUMN `dob` DATE NULL,
+    ADD COLUMN `gender` ENUM('MALE', 'FEMALE', 'OTHER') NULL;

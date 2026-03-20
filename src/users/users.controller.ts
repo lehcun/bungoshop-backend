@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { UserService } from './users.service';
 import { AuthGuard } from '@nestjs/passport';
+import { Gender } from '@prisma/client';
 
 @Controller('users')
 export class UserController {
@@ -42,6 +43,21 @@ export class UserController {
   @Post()
   create(@Body() body: { name: string; email: string; password: string }) {
     return this.userService.create(body);
+  }
+
+  @Put('me')
+  @UseGuards(AuthGuard('jwt'))
+  async updateInfo(
+    @Req() req,
+    @Body() body: { name: string; gender: Gender; dob: string },
+  ) {
+    const userId = req.user.id;
+    return await this.userService.updateUserInfo(
+      userId,
+      body.name,
+      body.gender,
+      body.dob,
+    );
   }
 
   @Put(':id')
