@@ -21,37 +21,37 @@ export class PaymentController {
     return { url };
   }
 
-  @Get('vnpay_ipn')
-  async vnpayIpn(@Query() query: any) {
-    // 1. Kiểm tra Checksum (Tương tự như bước tạo chữ ký nhưng so sánh)
-    // 2. Kiểm tra đơn hàng trong DB
-    // 3. Nếu mọi thứ OK, update status thành "Success"
-    console.log('Dữ liệu VNPay gửi về:', query);
-    return await this.paymentService.validateIpn(query);
-  }
-
+  // 1. DÀNH CHO BROWSER CỦA NGƯỜI DÙNG (Chỉ lo UI)
   @Get('vnpay_return')
   async vnpayReturn(@Query() query: any, @Res() res: any) {
-    const vnp_Params = query;
+    const vnp_Params = { ...query };
     console.log('vnp_Params: ', vnp_Params);
 
-    const isValid = await this.paymentService.validateIpn(vnp_Params);
+    const isSignatureValid =
+      await this.paymentService.verifyReturnUrl(vnp_Params);
 
-    if (isValid) {
-      const responseCode = vnp_Params['vnp_ResponseCode'];
-
-      if (responseCode === '00') {
-        // Thanh toán thành công -> Chuyển hướng về trang giao diện thành công của Frontend
+    if (isSignatureValid) {
+      if (vnp_Params['vnp_ResponseCode'] === '00') {
+        // Trả về UI thành công. Chuyện update DB để IPN lo.
         return res.redirect('http://localhost:3000/checkout/success');
       } else {
-        // Thanh toán lỗi (ví dụ: người dùng hủy)
         return res.redirect(
-          `http://localhost:3000/checkout/error?code=${responseCode}`,
+          `http://localhost:3000/checkout/error?code=${vnp_Params['vnp_ResponseCode']}`,
         );
       }
     } else {
-      // Chữ ký không hợp lệ
       return res.redirect('http://localhost:3000/checkout/error?code=97');
     }
+  }
+
+  // 2. DÀNH CHO SERVER VNPAY GỌI VÀO (Người nắm quyền quyết định)
+  @Get('vnpay_ipn')
+  async vnpayIpn(@Query() query: any) {
+    console.log('🤖 Webhook IPN nhận được tín hiệu từ VNPay:', query);
+    // Hàm này sẽ: Check chữ ký -> Check DB -> Update DB -> Gọi BullMQ Worker
+    const result = await this.paymentService.validateIpn(query);
+
+    // Bắt buộc phải return ra định dạng này cho VNPay
+    return result;
   }
 }

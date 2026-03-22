@@ -18,6 +18,7 @@ import { PaymentModule } from './payment/payment.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
@@ -52,6 +53,14 @@ import { redisStore } from 'cache-manager-redis-yet';
         port: configService.get<number>('REDIS_PORT'),
         ttl: 600000, // Thời gian sống mặc định của cache: 10 phút (tính bằng mili-giây)
       }),
+    }),
+
+    BullModule.forRoot({
+      connection: {
+        host: 'localhost',
+        port: 6379,
+        // password: 'your_password', // Nếu Redis có mật khẩu
+      },
     }),
 
     PrismaModule,
