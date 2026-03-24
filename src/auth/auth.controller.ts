@@ -28,7 +28,8 @@ export class AuthController {
     res.cookie('access_token', token, {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'none' : 'strict',
+      sameSite: isProd ? 'none' : 'lax',
+      domain: isProd ? '.bungoshop.io.vn' : 'localhost',
       maxAge: 1000 * 60 * 60 * 24, // 1 day
       path: '/',
     });
@@ -52,7 +53,8 @@ export class AuthController {
     res.cookie('access_token', token, {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'none' : 'strict',
+      sameSite: isProd ? 'none' : 'lax',
+      domain: isProd ? '.bungoshop.io.vn' : 'localhost',
       maxAge: 1000 * 60 * 60 * 24, // 1 day
       path: '/',
     });
@@ -101,7 +103,8 @@ export class AuthController {
     res.cookie('access_token', token, {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'none' : 'strict',
+      sameSite: isProd ? 'none' : 'lax',
+      domain: isProd ? '.bungoshop.io.vn' : 'localhost',
       maxAge: 1000 * 60 * 60 * 24, // 1 ngày
       path: '/',
     });

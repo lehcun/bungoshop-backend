@@ -33,14 +33,14 @@ export class PaymentController {
     if (isSignatureValid) {
       if (vnp_Params['vnp_ResponseCode'] === '00') {
         // Trả về UI thành công. Chuyện update DB để IPN lo.
-        return res.redirect('http://localhost:3000/checkout/success');
+        return res.redirect(`${process.env.FRONTEND_URL}/checkout/success`);
       } else {
         return res.redirect(
-          `http://localhost:3000/checkout/error?code=${vnp_Params['vnp_ResponseCode']}`,
+          `${process.env.FRONTEND_URL}/checkout/error?code=${vnp_Params['vnp_ResponseCode']}`,
         );
       }
     } else {
-      return res.redirect('http://localhost:3000/checkout/error?code=97');
+      return res.redirect(`${process.env.FRONTEND_URL}/checkout/error?code=97`);
     }
   }
 
