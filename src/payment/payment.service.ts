@@ -106,8 +106,7 @@ export class PaymentService {
     }
 
     // Bước 3: Kiểm tra số tiền có khớp không (Số tiền VNPay trả về đã nhân 100)
-    const vnpAmount =
-      parseInt(vnp_Params['vnp_Amount']) / 100 + order.shippingFeePrice;
+    const vnpAmount = parseInt(vnp_Params['vnp_Amount']) / 100;
     if (order.totalPrice !== vnpAmount) {
       console.log(
         `LỖI TIỀN: DB là ${order.totalPrice}, VNPay trả về ${vnpAmount}`,
