@@ -47,11 +47,48 @@ export class PaymentController {
   // 2. DÀNH CHO SERVER VNPAY GỌI VÀO (Người nắm quyền quyết định)
   @Get('vnpay_ipn')
   async vnpayIpn(@Query() query: any) {
-    console.log('🤖 Webhook IPN nhận được tín hiệu từ VNPay:', query);
+    console.log('Webhook IPN nhận được tín hiệu từ VNPay:', query);
     // Hàm này sẽ: Check chữ ký -> Check DB -> Update DB -> Gọi BullMQ Worker
     const result = await this.paymentService.validateIpn(query);
 
     // Bắt buộc phải return ra định dạng này cho VNPay
     return result;
+  }
+
+  // API TẠO ĐƠN MOMO
+  @Post('momo/create')
+  async createMoMoPayment(@Body() body: { orderId: string }) {
+    const url = await this.paymentService.createMoMoPaymentUrl(body.orderId);
+    return { url };
+  }
+
+  // 1. DÀNH CHO BROWSER CỦA NGƯỜI DÙNG (Giao diện UI)
+  @Get('momo_return')
+  async momoReturn(@Query() query: any, @Res() res: any) {
+    const frontendUrl = process.env.FRONTEND_URL;
+
+    const resultCode = query.resultCode;
+    const message = query.message || 'Thanh toán thất bại';
+
+    if (query.resultCode === '0') {
+      return res.redirect(`${frontendUrl}/checkout/success`);
+    } else {
+      console.log(
+        `${frontendUrl}/checkout/error?code=${resultCode}&message=${encodeURIComponent(message)}`,
+      );
+      return res.redirect(
+        `${frontendUrl}/checkout/error?code=${resultCode}&message=${encodeURIComponent(message)}`,
+      );
+    }
+  }
+
+  // 2. DÀNH CHO SERVER MOMO GỌI VÀO (Tạo Payment ngầm)
+  @Post('momo_ipn')
+  async momoIpn(@Body() body: any) {
+    console.log('Webhook MOMO IPN nhận tín hiệu:', body);
+
+    await this.paymentService.validateMoMoIpn(body);
+
+    return { message: 'Received IPN successfully' };
   }
 }

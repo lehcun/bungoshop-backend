@@ -76,123 +76,6 @@ export class PaymentService {
     return sorted;
   }
 
-  // async validateIpn(vnp_Params: any) {
-  //   const secretKey = process.env.VNP_HASHSECRET;
-  //   const secureHash = vnp_Params['vnp_SecureHash'];
-
-  //   // 1. Xóa các tham số hash để tính toán lại
-  //   delete vnp_Params['vnp_SecureHash'];
-  //   delete vnp_Params['vnp_SecureHashType'];
-
-  //   // 2. Sắp xếp và tạo lại mã Hash để so sánh
-  //   const sortedParams = this.sortObject(vnp_Params);
-  //   const signData = qs.stringify(sortedParams, { encode: false });
-  //   const hmac = crypto.createHmac('sha512', secretKey);
-  //   const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
-
-  //   // --- BẮT ĐẦU KIỂM TRA ---
-
-  //   // Bước 1: Kiểm tra chữ ký (Checksum)
-  //   if (secureHash !== signed) {
-  //     return { RspCode: '97', Message: 'Invalid checksum' };
-  //   }
-
-  //   // Bước 2: Kiểm tra đơn hàng có tồn tại trong Database không
-  //   const orderId = vnp_Params['vnp_TxnRef'];
-  //   const order = await this.orderService.findOne(orderId);
-
-  //   if (!order) {
-  //     return { RspCode: '01', Message: 'Order not found' };
-  //   }
-
-  //   // Bước 3: Kiểm tra số tiền có khớp không (Số tiền VNPay trả về đã nhân 100)
-  //   const vnpAmount = parseInt(vnp_Params['vnp_Amount']) / 100;
-  //   if (order.totalPrice !== vnpAmount) {
-  //     console.log(
-  //       `LỖI TIỀN: DB là ${order.totalPrice}, VNPay trả về ${vnpAmount}`,
-  //     );
-  //     return { RspCode: '04', Message: 'Invalid amount' };
-  //   }
-
-  //   // Bước 4: Kiểm tra trạng thái đơn hàng hiện tại (Tránh xử lý trùng lặp)
-  //   // Chỉ cập nhật nếu đơn hàng đang ở trạng thái 'Pending' (Chờ thanh toán)
-  //   if (order.status !== 'PENDING') {
-  //     return { RspCode: '02', Message: 'Order already confirmed' };
-  //   }
-
-  //   // --- CẬP NHẬT TRẠNG THÁI ---
-  //   const responseCode = vnp_Params['vnp_ResponseCode'];
-  //   console.log(responseCode);
-  //   if (responseCode === '00') {
-  //     // Thanh toán thành công
-  //     const payment = await this.createPayment(order.userId, orderId, {
-  //       method: PaymentMethod.VNPay,
-  //       amount: vnpAmount,
-  //       transactionId: vnp_Params['vnp_TransactionNo'],
-  //       metadata: vnp_Params,
-  //     });
-
-  //     console.log('Payment: ', payment);
-  //     console.log('Trước hàm queue trong paymentSer');
-
-  //     // 2. 🔥 ÁP DỤNG MESSAGE QUEUE TẠI ĐÂY 🔥
-  //     // Thay vì gọi hàm gửi Email/PDF làm treo API, ta đóng gói data và ném vào Queue.
-  //     // API sẽ chạy tuột qua dòng này trong chưa tới 5ms!
-  //     await this.paymentQueue.add(
-  //       'process-successful-payment',
-  //       {
-  //         orderId: order.id,
-  //         // Có thể truyền thêm các thông tin cần thiết khác cho Worker ở đây
-  //       },
-  //       {
-  //         attempts: 3, // tự động thử lại 3 lần
-  //         backoff: {
-  //           type: 'exponential',
-  //           delay: 3000, // Lần 1 cách 3s, lần 2 cách 9s...
-  //         },
-  //         removeOnComplete: true, // Xong việc thì xóa khỏi Redis cho nhẹ máy
-  //       },
-  //     );
-
-  //     console.log(
-  //       `[Queue] Đã đẩy đơn hàng ${order.id} vào hàng đợi xử lý ngầm.`,
-  //     );
-  //   } else {
-  //     // Thanh toán lỗi (Khách hàng hủy, hết hạn, thiếu số dư...)
-  //     await this.prisma.$transaction(async (tx) => {
-  //       await tx.order.update({
-  //         where: { id: orderId },
-  //         data: {
-  //           status: OrderStatus.CANCELED,
-  //           paymentStatus: PaymentStatus.FAILED,
-  //         },
-  //       });
-
-  //       const orderWithItems = await tx.order.findUnique({
-  //         where: { id: orderId },
-  //         include: { items: true },
-  //       });
-
-  //       if (orderWithItems && orderWithItems.items.length > 0) {
-  //         // Chaỵ vòng lặp hoàn kho
-  //         for (const item of orderWithItems.items) {
-  //           await tx.productVariant.update({
-  //             where: { id: item.variantId },
-  //             data: {
-  //               stock: {
-  //                 increment: item.quantity,
-  //               },
-  //             },
-  //           });
-  //         }
-  //       }
-  //     });
-  //   }
-
-  //   // Trả về kết quả thành công cho VNPay để họ không gửi lại IPN nữa
-  //   return { RspCode: '00', Message: 'Confirm Success' };
-  // }
-
   async validateIpn(vnp_Params: any) {
     console.log('\n====== [IPN] BẮT ĐẦU VALIDATE ======');
     const secretKey = process.env.VNP_HASHSECRET;
@@ -330,57 +213,6 @@ export class PaymentService {
     // Chỉ check chữ ký, KHÔNG CHẠM VÀO DATABASE
     return secureHash === signed;
   }
-
-  // async createPayment(
-  //   userId: string,
-  //   orderId: string,
-  //   paymentData: {
-  //     method: PaymentMethod;
-  //     amount: number;
-  //     transactionId?: string;
-  //     metadata?: any;
-  //   },
-  // ) {
-  //   // 1. Kiểm tra đơn hàng có tồn tại và thuộc về user không
-  //   const order = await this.prisma.order.findFirst({
-  //     where: { id: orderId, userId },
-  //   });
-
-  //   if (!order) {
-  //     throw new NotFoundException(
-  //       'Đơn hàng không tồn tại hoặc không thuộc quyền sở hữu của bạn.',
-  //     );
-  //   }
-
-  //   return this.prisma.$transaction(async (tx) => {
-  //     const payment = await tx.payment.create({
-  //       data: {
-  //         orderId: order.id,
-  //         userId,
-  //         method: paymentData.method,
-  //         amount: paymentData.amount,
-  //         transactionId: paymentData.transactionId,
-  //         metadata: paymentData.metadata,
-  //         status: PaymentStatus.SUCCEEDED,
-  //       },
-  //     });
-
-  //     console.log('paymentcreate: ', payment);
-
-  //     // 3. Cập nhật trạng thái đơn hàng (Order)
-  //     // Nếu số tiền thanh toán đủ, cập nhật trạng thái đơn hàng
-  //     await tx.order.update({
-  //       where: { id: orderId },
-  //       data: {
-  //         paymentStatus: PaymentStatus.SUCCEEDED,
-  //         paymentMethod: paymentData.method,
-  //         status: OrderStatus.PAID, // Chuyển sang trạng thái đang xử lý sau khi thanh toán
-  //       },
-  //     });
-  //     return payment;
-  //   });
-  // }
-
   async createPayment(userId: string, orderId: string, paymentData: any) {
     console.log('\n   --- [CREATE PAYMENT] Bắt đầu ---');
     console.log(
@@ -418,8 +250,7 @@ export class PaymentService {
         },
       });
 
-      console.log('   ✅ Đã insert bảng Payment:', payment.id);
-
+      console.log(' ✅ Đã insert bảng Payment:', payment.id);
       await tx.order.update({
         where: { id: orderId },
         data: {
@@ -429,8 +260,118 @@ export class PaymentService {
         },
       });
 
-      console.log('   ✅ Đã update trạng thái Order thành PAID');
+      console.log('✅ Đã update trạng thái Order thành PAID');
       return payment;
     });
+  }
+
+  // --- PHẦN CỦA MOMO ---
+  async createMoMoPaymentUrl(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+    if (!order) throw new NotFoundException('Đơn hàng không tồn tại');
+
+    const partnerCode = process.env.MOMO_PARTNER_CODE;
+    const accessKey = process.env.MOMO_ACCESS_KEY;
+    const secretKey = process.env.MOMO_SECRET_KEY;
+
+    // Tự truyền link IPN trực tiếp từ code!
+    const redirectUrl = `${process.env.BACKEND_URL}/payment/momo_return`; // Link đẩy về giao diện
+    const ipnUrl = `${process.env.BACKEND_URL}/payment/momo_ipn`; // Link chạy ngầm Update DB
+
+    const amount = order.totalPrice;
+    const orderInfo = `Thanh toán đơn hàng ${orderId}`;
+    const requestId = partnerCode + new Date().getTime(); // Sinh mã ngẫu nhiên
+    const requestType = 'captureWallet'; // Loại thanh toán QR
+    const extraData = ''; // Không dùng thì để rỗng
+
+    const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
+
+    // Dùng SHA256 thay vì SHA512 như VNPay
+    const signature = crypto
+      .createHmac('sha256', secretKey)
+      .update(rawSignature)
+      .digest('hex');
+
+    // Gói data thành JSON
+    const requestBody = JSON.stringify({
+      partnerCode,
+      accessKey,
+      requestId,
+      amount,
+      orderId,
+      orderInfo,
+      redirectUrl,
+      ipnUrl,
+      extraData,
+      requestType,
+      signature,
+      lang: 'vi',
+    });
+
+    // Gọi API của MoMo để lấy Link Thanh Toán
+    const response = await fetch(
+      'https://test-payment.momo.vn/v2/gateway/api/create',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: requestBody,
+      },
+    );
+
+    const data = await response.json();
+    console.log('MoMo trả về:', data);
+
+    // Trả cái payUrl này về cho Frontend để họ redirect khách sang MoMo
+    return data.payUrl;
+  }
+
+  // Hàm xử lý Webhook IPN chạy ngầm của MoMo
+  async validateMoMoIpn(momoParams: any) {
+    console.log('\n====== [MOMO IPN] BẮT ĐẦU ======');
+    const secretKey = process.env.MOMO_SECRET_KEY;
+
+    // 1. Check chữ ký
+    const rawSignature = `accessKey=${process.env.MOMO_ACCESS_KEY}&amount=${momoParams.amount}&extraData=${momoParams.extraData}&message=${momoParams.message}&orderId=${momoParams.orderId}&orderInfo=${momoParams.orderInfo}&orderType=${momoParams.orderType}&partnerCode=${momoParams.partnerCode}&payType=${momoParams.payType}&requestId=${momoParams.requestId}&responseTime=${momoParams.responseTime}&resultCode=${momoParams.resultCode}&transId=${momoParams.transId}`;
+    const expectedSignature = crypto
+      .createHmac('sha256', secretKey)
+      .update(rawSignature)
+      .digest('hex');
+
+    if (momoParams.signature !== expectedSignature) {
+      console.log('🛑 [MOMO IPN] Sai chữ ký!');
+      return false; // Chữ ký fake
+    }
+
+    const orderId = momoParams.orderId;
+    const order = await this.orderService.findOne(orderId);
+
+    // MoMo resultCode = 0 là thành công (VNPay là '00')
+    if (momoParams.resultCode === 0 && order && order.status === 'PENDING') {
+      console.log('✅ [MOMO IPN] Thanh toán thành công, cập nhật DB...');
+
+      try {
+        await this.createPayment(order.userId, orderId, {
+          method: PaymentMethod.MOMO,
+          amount: momoParams.amount,
+          transactionId: momoParams.transId.toString(),
+          metadata: momoParams,
+        });
+
+        // Kích hoạt Worker BullMQ
+        await this.paymentQueue.add('process-successful-payment', {
+          orderId: order.id,
+        });
+        console.log('✅ [MOMO IPN] Đã ném vào Queue!');
+      } catch (error) {
+        console.error('Lỗi lưu DB MoMo:', error);
+      }
+    } else {
+      console.log('👉 [MOMO IPN] Giao dịch thất bại hoặc đã xử lý rồi.');
+      // Xử lý hủy đơn / hoàn kho ở đây...
+    }
+
+    return true; // Báo cho MoMo biết là Server mình đã nhận được tin
   }
 }
