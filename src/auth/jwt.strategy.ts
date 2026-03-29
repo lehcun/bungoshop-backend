@@ -14,20 +14,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       //Thay từ đọc header sang etractors
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (req: Request) => {
-          // --- BẮT ĐẦU ĐẶT BẪY LOG ---
-          console.log('=== CÓ KHÁCH GỌI API ===');
-          console.log('1. Tất cả Cookies nhận được:', req.cookies);
-          console.log('2. Access Token lấy ra:', req?.cookies?.access_token);
-          console.log('3. Chìa khóa đang dùng:', process.env.SECRET_KEY);
-          console.log(
-            '4. Chìa khóa đang dùng cach 2:',
-            configService.get<string>('SECRET_KEY'),
-          );
-          console.log('========================');
-
-          return req?.cookies?.access_token;
-        }, // cấu hình thêm để lấy accesstoken từ cookie
+        (req: Request) => req?.cookies.access_token,
       ]),
       secretOrKey: configService.get<string>('SECRET_KEY'),
       ignoreExpiration: false,
@@ -35,15 +22,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    // --- BẬT BẪY SỐ 3 ---
     console.log('=== ĐÃ VÀO ĐƯỢC HÀM VALIDATE ===');
-    console.log('Thông tin giải mã:', payload);
-
-    // Lấy user đầy đủ từ DB
     const user = await this.userService.findOne(payload.sub);
-
-    console.log('Tìm thấy User trong DB không?', user ? 'CÓ' : 'KHÔNG (NULL)');
-    // ----------------------
 
     if (!user) {
       throw new UnauthorizedException('Không tìm thấy người dùng');

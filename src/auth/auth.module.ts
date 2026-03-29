@@ -5,15 +5,20 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from 'src/users/users.module';
 import { JwtStrategy } from './jwt.strategy';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 @Module({
   imports: [
     ConfigModule, // import config để load env
     UsersModule,
     PassportModule,
-    JwtModule.register({
-      secret: 'mysecretkey_!@98jkAHSDJH1289hasd', //risk
-      signOptions: { expiresIn: '1d' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        secret:
+          configService.get<string>('SECRET_KEY') || process.env.SECRET_KEY,
+        signOptions: { expiresIn: '1d' },
+      }),
     }),
   ],
   providers: [AuthService, JwtStrategy],
