@@ -22,7 +22,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    console.log('=== ĐÃ VÀO ĐƯỢC HÀM VALIDATE ===');
     const user = await this.userService.findOne(payload.sub);
 
     if (!user) {
