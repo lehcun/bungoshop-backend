@@ -27,20 +27,22 @@ export class PaymentController {
     const vnp_Params = { ...query };
     console.log('vnp_Params: ', vnp_Params);
 
+    const frontendUrl = process.env.FRONTEND_URL;
+
     const isSignatureValid =
       await this.paymentService.verifyReturnUrl(vnp_Params);
 
     if (isSignatureValid) {
       if (vnp_Params['vnp_ResponseCode'] === '00') {
         // Trả về UI thành công. Chuyện update DB để IPN lo.
-        return res.redirect(`${process.env.FRONTEND_URL}/checkout/success`);
+        return res.redirect(`${frontendUrl}/checkout/success`);
       } else {
         return res.redirect(
-          `${process.env.FRONTEND_URL}/checkout/error?code=${vnp_Params['vnp_ResponseCode']}`,
+          `${frontendUrl}/checkout/error?code=${vnp_Params['vnp_ResponseCode']}`,
         );
       }
     } else {
-      return res.redirect(`${process.env.FRONTEND_URL}/checkout/error?code=97`);
+      return res.redirect(`${frontendUrl}/checkout/error?code=97`);
     }
   }
 
