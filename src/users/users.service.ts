@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Gender, User } from '@prisma/client';
 
@@ -170,5 +174,21 @@ export class UserService {
         isDefault: isDefault,
       },
     });
+  }
+
+  async deleteAddress(id: string, userId: string) {
+    const address = await this.prisma.address.findUnique({
+      where: { id },
+    });
+
+    if (!address) {
+      throw new NotFoundException('Không tìm thấy địa chỉ này.');
+    }
+
+    await this.prisma.address.delete({
+      where: { id },
+    });
+
+    return { message: 'Đã xóa địa chỉ thành công.' };
   }
 }

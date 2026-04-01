@@ -101,15 +101,19 @@ export class UserController {
     },
   ) {
     const { isDefault } = body;
-    console.log('isDefault: ', isDefault);
-    console.log('isDefaultType: ', typeof isDefault);
     const isDef = isDefault ? true : false;
     const newDto = { userId: req.user.id, isDefault: isDef, ...body };
     return await this.userService.createAddress(newDto);
   }
 
-  @Put('address/:id')
+  @Delete('address/:id')
   @UseGuards(AuthGuard('jwt'))
+  async deleteAddress(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user.sub;
+    return await this.userService.deleteAddress(id, userId);
+  }
+
+  @Put('address/:id')
   async updateAddress(
     @Param() param,
     @Req() req,
