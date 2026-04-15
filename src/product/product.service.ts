@@ -29,7 +29,7 @@ export class ProductService {
   async create(dto: CreateProductDto): Promise<Product> {
     console.log('dto: ', dto);
     const category = await this.prisma.category.findUnique({
-      where: { name: dto.categoryId },
+      where: { id: dto.categoryId },
     });
     const slug = dto.slug || (await this.generateUniqueSlug(dto.name));
     return await this.prisma.product.create({

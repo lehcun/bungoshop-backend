@@ -5,7 +5,7 @@ test.describe('Luồng đăng nhập người dùng', () => {
     page,
   }) => {
     // 1. Đi đến trang đăng nhập (NextJS chạy ở port 3000)
-    await page.goto('http://localhost:3000/user/login');
+    await page.goto('https://bungshop.io.vn/buyer/login');
 
     // 2. Điền thông tin vào form
     await page.getByPlaceholder('Email').fill('lehcun1099@gmail.com');

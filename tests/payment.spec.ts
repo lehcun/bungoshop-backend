@@ -1,24 +1,26 @@
 import { test, expect } from '@playwright/test';
 
 // URL của backend NestJS
+const BASE_URL = 'https://bungoshop.io.vn';
 
 test.describe('Kiểm tra luông thanh toán của người dùng', () => {
-  test('Người dùng thanh toán thành công', async ({ page }) => {
-    await page.goto('http://localhost:3000/');
-    await page.getByRole('link', { name: 'Login' }).click();
-    await page.getByRole('textbox', { name: 'Email' }).click();
-    await page
-      .getByRole('textbox', { name: 'Email' })
-      .fill('lehcun1099@gmail.com');
-    await page.getByRole('textbox', { name: 'Password' }).click();
-    await page.getByRole('textbox', { name: 'Password' }).fill('123456');
+  test.beforeEach(async ({ page }) => {
+    // 1. Đăng nhập trước khi test giỏ hàng
+    await page.goto(`${BASE_URL}/buyer/login`);
+    await page.getByPlaceholder('Email').fill('lehcun1099@gmail.com');
+    await page.getByPlaceholder('Password').fill('123456');
     await page.getByRole('button', { name: 'Login' }).click();
-    await page.goto('http://localhost:3000/shop');
+
+    // Đợi đăng nhập xong và chuyển về trang chủ hoặc trang sản phẩm
+  });
+
+  test('Người dùng thanh toán thành công', async ({ page }) => {
+    await page.goto('https://bungoshop.io.vn/shop');
     await page.getByRole('link', { name: 'product-img NEW' }).first().click();
     await page.getByRole('button', { name: 'White' }).click();
     await page.getByRole('button', { name: 'L', exact: true }).click();
     await page.getByRole('button', { name: '🛒 Thêm vào giỏ hàng' }).click();
-    await page.goto('http://localhost:3000/cart');
+    await page.goto('https://bungoshop.io.vn/cart');
     await page.getByRole('checkbox').nth(1).check();
     await page.getByRole('button', { name: 'VNPay' }).click();
     await page.getByText('💳 Thanh toán').click();
@@ -41,7 +43,7 @@ test.describe('Kiểm tra luông thanh toán của người dùng', () => {
   });
 
   test('Người dùng hủy thanh toán', async ({ page }) => {
-    await page.goto('http://localhost:3000/');
+    await page.goto('https://bungoshop.io.vn/');
     await page.getByRole('link', { name: 'Login' }).click();
     await page.getByRole('textbox', { name: 'Email' }).click();
     await page
@@ -50,12 +52,12 @@ test.describe('Kiểm tra luông thanh toán của người dùng', () => {
     await page.getByRole('textbox', { name: 'Password' }).click();
     await page.getByRole('textbox', { name: 'Password' }).fill('123456');
     await page.getByRole('button', { name: 'Login' }).click();
-    await page.goto('http://localhost:3000/shop');
+    await page.goto('https://bungoshop.io.vn/shop');
     await page.getByRole('link', { name: 'product-img NEW' }).first().click();
     await page.getByRole('button', { name: 'White' }).click();
     await page.getByRole('button', { name: 'L', exact: true }).click();
     await page.getByRole('button', { name: '🛒 Thêm vào giỏ hàng' }).click();
-    await page.goto('http://localhost:3000/cart');
+    await page.goto('https://bungoshop.io.vn/cart');
     await page.getByRole('button', { name: 'VNPay' }).click();
     await page.getByText('💳 Thanh toán').click();
     await page.getByRole('button', { name: 'Xác nhận hủy' }).click();
